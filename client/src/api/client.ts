@@ -29,7 +29,6 @@ import type {
   ConfigType,
   ConfigResponse,
   AIConfig,
-  TranslationConfig,
   FeedTranslation,
   UploadResponse,
   AuthStatus,
