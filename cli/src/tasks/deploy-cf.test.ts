@@ -16,6 +16,7 @@ describe("collectWorkerSecrets", () => {
       RIN_GITHUB_CLIENT_SECRET: "client-secret",
       S3_ACCESS_KEY_ID: "access-key",
       S3_SECRET_ACCESS_KEY: "secret-key",
+      TURNSTILE_SECRET: "turnstile-secret",
       UNUSED: "ignored",
     });
 
@@ -27,6 +28,7 @@ describe("collectWorkerSecrets", () => {
       RIN_GITHUB_CLIENT_SECRET: "client-secret",
       S3_ACCESS_KEY_ID: "access-key",
       S3_SECRET_ACCESS_KEY: "secret-key",
+      TURNSTILE_SECRET: "turnstile-secret",
     });
   });
 

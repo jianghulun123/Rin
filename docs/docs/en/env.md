@@ -50,6 +50,15 @@ Site configuration can be modified via the **Settings Page** after deployment. E
 | `RSS_TITLE` | No | RSS feed title | - | - |
 | `RSS_DESCRIPTION` | No | RSS feed description | - | - |
 
+### Bot Protection (optional)
+
+| Variable | Required | Description | Default | Example |
+|----------|----------|-------------|---------|---------|
+| `TURNSTILE_SITE_KEY` | No | Turnstile site key (public, sent to the login page) | - | `0x4AAAAAAA...` |
+| `TURNSTILE_HOSTNAMES` | No | Comma-separated allowlist of hostnames that solved the challenge. Empty skips the hostname check | - | `blog.example.com` |
+
+Turnstile only takes effect when `TURNSTILE_SITE_KEY` is set together with the `TURNSTILE_SECRET` secret. A production allowlist must not contain `localhost` or `127.0.0.1`.
+
 :::tip For New Users
 We recommend setting `CACHE_STORAGE_MODE` to `database` to reduce deployment complexity without additional S3 cache configuration.
 :::
@@ -69,9 +78,14 @@ These sensitive values must be configured as **Cloudflare Workers Secrets**, ent
 | `ADMIN_USERNAME` | Username for password login | Set yourself |
 | `ADMIN_PASSWORD` | Password for password login | Set yourself |
 | `JWT_SECRET` | JWT signing key (any random string) | Generate yourself |
+| `TURNSTILE_SECRET` | Turnstile secret key (enables the bot gate) | Cloudflare Dashboard → Turnstile → your widget |
 
 :::warning Authentication Required
 You must configure either **GitHub OAuth** or **Username/Password** authentication, otherwise you cannot access the admin panel.
+:::
+
+:::tip Bot protection (optional)
+Set `TURNSTILE_SECRET` together with the `TURNSTILE_SITE_KEY` variable to require a Cloudflare Turnstile challenge on the password login form. Leave both unset to keep the login form unchanged.
 :::
 
 ### S3 Storage Credentials

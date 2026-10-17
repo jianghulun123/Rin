@@ -217,6 +217,9 @@ jobs:
           RSS_TITLE: ${{ vars.RSS_TITLE || '' }}
           RSS_DESCRIPTION: ${{ vars.RSS_DESCRIPTION || '' }}
           FRONTEND_URL: ${{ vars.FRONTEND_URL || '' }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY || '' }}
+          TURNSTILE_HOSTNAMES: ${{ vars.TURNSTILE_HOSTNAMES || '' }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET || '' }}
           CACHE_STORAGE_MODE: ${{ vars.CACHE_STORAGE_MODE || 's3' }}
         run: |
           set -euo pipefail

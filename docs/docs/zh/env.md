@@ -50,6 +50,15 @@ Rin 部署需要配置两类环境变量：**Variables（明文变量）**和**S
 | `RSS_TITLE` | 否 | RSS 标题 | - | - |
 | `RSS_DESCRIPTION` | 否 | RSS 描述 | - | - |
 
+### 防机器人验证（可选）
+
+| 变量名 | 必填 | 描述 | 默认值 | 示例 |
+|--------|------|------|--------|------|
+| `TURNSTILE_SITE_KEY` | 否 | Turnstile 站点密钥（公开值，会下发到登录页） | - | `0x4AAAAAAA...` |
+| `TURNSTILE_HOSTNAMES` | 否 | siteverify 返回 hostname 的白名单，逗号分隔；留空则跳过 hostname 校验 | - | `blog.example.com` |
+
+只有同时配置 `TURNSTILE_SITE_KEY` 与 Secret `TURNSTILE_SECRET` 时 Turnstile 才生效。生产环境白名单不要包含 `localhost` 与 `127.0.0.1`。
+
 :::tip 新用户推荐
 建议将 `CACHE_STORAGE_MODE` 设为 `database`，无需额外配置 S3 缓存即可使用，降低部署复杂度。
 :::
@@ -69,9 +78,14 @@ Rin 部署需要配置两类环境变量：**Variables（明文变量）**和**S
 | `ADMIN_USERNAME` | 账号密码登录用户名 | 自行设定 |
 | `ADMIN_PASSWORD` | 账号密码登录密码 | 自行设定 |
 | `JWT_SECRET` | JWT 签名密钥（任意随机字符串） | 自行生成 |
+| `TURNSTILE_SECRET` | Turnstile 服务端校验密钥（启用防机器人验证） | Cloudflare 面板 → Turnstile → 对应挂件 |
 
 :::warning 认证要求
 必须配置 **GitHub OAuth** 或 **账号密码** 其中一种登录方式，否则无法登录后台。
+:::
+
+:::tip 防机器人验证（可选）
+同时配置 `TURNSTILE_SITE_KEY`（Variables）与 `TURNSTILE_SECRET`（Secret）后，账号密码登录需要先通过 Cloudflare Turnstile 人机验证；两者都不配置时登录表单保持原样。
 :::
 
 ### S3 存储凭证

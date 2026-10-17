@@ -207,7 +207,8 @@
       "empty": "Please enter username and password",
       "failed": "Login failed",
       "invalid": "Invalid username or password",
-      "network": "Network error, please try again"
+      "network": "Network error, please try again",
+      "verification": "Please complete the human verification"
     },
     "loading": "Logging in...",
     "no_methods": "No login methods available",

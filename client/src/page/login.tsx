@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { ButtonWithLoading } from "../components/button";
 import { Icon } from "../components/icon";
 import { Input } from "../components/input";
+import { TurnstileWidget } from "../components/turnstile";
 import { client, oauth_url } from "../app/runtime";
 import { setAuthToken } from "../utils/auth";
 import { getLoginRedirectPath } from "../utils/auth-redirect";
@@ -11,7 +12,9 @@ import { getLoginRedirectPath } from "../utils/auth-redirect";
 export function LoginPage() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [authStatus, setAuthStatus] = useState<{ github: boolean; password: boolean }>({ github: false, password: false });
+    const [authStatus, setAuthStatus] = useState<{ github: boolean; password: boolean; turnstileSiteKey?: string }>({ github: false, password: false });
+    const [turnstileToken, setTurnstileToken] = useState('');
+    const [turnstileResetKey, setTurnstileResetKey] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [, setLocation] = useLocation();
@@ -31,13 +34,27 @@ export function LoginPage() {
             return;
         }
 
+        if (authStatus.turnstileSiteKey && !turnstileToken) {
+            setError(t('login.error.verification'));
+            return;
+        }
+
         setIsLoading(true);
         setError('');
 
         try {
-            const { data, error: apiError } = await client.auth.login({ username, password });
+            const { data, error: apiError } = await client.auth.login({
+                username,
+                password,
+                ...(turnstileToken ? { turnstileToken } : {}),
+            });
 
             if (apiError) {
+                if (authStatus.turnstileSiteKey) {
+                    setTurnstileToken('');
+                    setTurnstileResetKey(key => key + 1);
+                }
+
                 setError(t('login.error.invalid'));
                 setIsLoading(false);
                 return;
@@ -88,6 +105,13 @@ export function LoginPage() {
                             onSubmit={handleLogin}
                             disabled={isLoading}
                         />
+                        {authStatus.turnstileSiteKey && (
+                            <TurnstileWidget
+                                siteKey={authStatus.turnstileSiteKey}
+                                onToken={setTurnstileToken}
+                                resetKey={turnstileResetKey}
+                            />
+                        )}
                         <div className="flex flex-row items-center space-x-4 pt-2">
                             <ButtonWithLoading
                                 title={isLoading ? t("login.loading") : t("login.title")}

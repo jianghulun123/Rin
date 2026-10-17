@@ -207,7 +207,8 @@
       "empty": "請輸入用戶名和密碼",
       "failed": "登入失敗",
       "invalid": "用戶名或密碼錯誤",
-      "network": "網路錯誤，請重試"
+      "network": "網路錯誤，請重試",
+      "verification": "請先完成人機驗證"
     },
     "loading": "登入中...",
     "no_methods": "沒有可用的登入方式",

@@ -124,14 +124,18 @@ export interface UpdateProfileRequest {
 // Auth Types
 // ============================================================================
 
+export const TURNSTILE_VERIFICATION_FAILED_MESSAGE = "Human verification failed";
+
 export interface AuthStatus {
   github: boolean;
   password: boolean;
+  turnstileSiteKey?: string;
 }
 
 export interface LoginRequest {
   username: string;
   password: string;
+  turnstileToken?: string;
 }
 
 export interface LoginResponse {

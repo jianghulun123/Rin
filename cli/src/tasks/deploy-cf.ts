@@ -27,6 +27,7 @@ const WORKER_SECRET_KEYS = [
   "RIN_GITHUB_CLIENT_SECRET",
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
+  "TURNSTILE_SECRET",
 ] as const;
 
 function isQueueAlreadyPresentError(stderr: string) {
@@ -168,6 +169,8 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
   const pageSize = env("PAGE_SIZE", "5");
   const rssEnable = env("RSS_ENABLE", "false");
   const frontendUrl = env("FRONTEND_URL", "");
+  const turnstileSiteKey = env("TURNSTILE_SITE_KEY", "");
+  const turnstileHostnames = env("TURNSTILE_HOSTNAMES", "");
 
   let finalS3Endpoint = s3Endpoint;
   let finalS3Bucket = s3Bucket;
@@ -221,6 +224,8 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
       PAGE_SIZE = "${pageSize}"
       RSS_ENABLE = "${rssEnable}"
       FRONTEND_URL = "${frontendUrl}"
+${turnstileSiteKey ? `      TURNSTILE_SITE_KEY = "${turnstileSiteKey}"` : ""}
+${turnstileHostnames ? `      TURNSTILE_HOSTNAMES = "${turnstileHostnames}"` : ""}
 
       [placement]
       mode = "smart"

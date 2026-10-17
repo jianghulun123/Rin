@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { TURNSTILE_VERIFICATION_FAILED_MESSAGE } from "@rin/api";
 import type { AppContext, Variables } from "../core/hono-types";
 import { profileAsync } from "../core/server-timing";
 import { setJWTCookie, clearJWTCookie } from "../core/hono-middleware";
@@ -9,6 +10,7 @@ import {
     ForbiddenError,
     InternalServerError,
 } from "../errors";
+import { getTurnstileConfig, verifyTurnstileToken } from "../utils/turnstile";
 
 // Hash password using SHA-256
 async function hashPassword(password: string): Promise<string> {
@@ -41,10 +43,23 @@ export function PasswordAuthService(): Hono<{
             throw new BadRequestError('Admin credentials not configured');
         }
 
-        const { username, password } = await profileAsync(c, 'auth_login_parse', () => c.req.json()) as { username: string; password: string };
+        const { username, password, turnstileToken } = await profileAsync(c, 'auth_login_parse', () => c.req.json()) as { username: string; password: string; turnstileToken?: string };
 
         if (!username || !password) {
             throw new BadRequestError('Username and password are required');
+        }
+
+        // Bot gate: only enforced when the deployment configures Turnstile
+        const turnstile = getTurnstileConfig(env);
+        if (turnstile) {
+            const verification = await profileAsync(c, 'auth_login_turnstile', () => verifyTurnstileToken(turnstile, {
+                token: turnstileToken,
+                remoteIp: c.req.header('CF-Connecting-IP'),
+            }));
+
+            if (!verification.ok) {
+                throw new ForbiddenError(TURNSTILE_VERIFICATION_FAILED_MESSAGE);
+            }
         }
 
         // Hash the provided password
@@ -145,10 +160,12 @@ export function PasswordAuthService(): Hono<{
     // Check if password login is available
     app.get("/status", async (c: AppContext) => {
         const env = c.env;
+        const turnstile = getTurnstileConfig(env);
         
         return c.json({
             github: !!(env.RIN_GITHUB_CLIENT_ID && env.RIN_GITHUB_CLIENT_SECRET),
             password: !!(env.ADMIN_USERNAME && env.ADMIN_PASSWORD),
+            ...(turnstile ? { turnstileSiteKey: turnstile.siteKey } : {}),
         });
     });
 

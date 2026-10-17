@@ -64,6 +64,8 @@ RSS_DESCRIPTION = "${env.RSS_DESCRIPTION || "Development Environment"}"
 CACHE_STORAGE_MODE = "${env.CACHE_STORAGE_MODE || "s3"}"
 ADMIN_USERNAME = "${env.ADMIN_USERNAME}"
 ADMIN_PASSWORD = "${env.ADMIN_PASSWORD}"
+${env.TURNSTILE_SITE_KEY ? `TURNSTILE_SITE_KEY = "${env.TURNSTILE_SITE_KEY}"` : ""}
+${env.TURNSTILE_HOSTNAMES ? `TURNSTILE_HOSTNAMES = "${env.TURNSTILE_HOSTNAMES}"` : ""}
 
 [[d1_databases]]
 binding = "DB"
@@ -103,10 +105,13 @@ RSS_ENABLE=${env.RSS_ENABLE || "false"}
     `RIN_GITHUB_CLIENT_ID=${env.RIN_GITHUB_CLIENT_ID}
 RIN_GITHUB_CLIENT_SECRET=${env.RIN_GITHUB_CLIENT_SECRET}
 JWT_SECRET=${env.JWT_SECRET}
-${env.R2_BUCKET_NAME ? "" : `S3_ACCESS_KEY_ID=${env.S3_ACCESS_KEY_ID}
+${env.TURNSTILE_SECRET ? `TURNSTILE_SECRET=${env.TURNSTILE_SECRET}\n` : ""}${
+      env.R2_BUCKET_NAME
+        ? ""
+        : `S3_ACCESS_KEY_ID=${env.S3_ACCESS_KEY_ID}
 S3_SECRET_ACCESS_KEY=${env.S3_SECRET_ACCESS_KEY}
-`}
-`,
+`
+    }`,
   );
 
   console.log("✅ 已生成 wrangler.toml");
