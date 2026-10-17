@@ -65,6 +65,7 @@
       "confirm": "確定刪除這篇文章嗎？",
       "title": "刪除文章"
     },
+    "empty": "暫無文章",
     "search": {
       "placeholder": "請輸入關鍵字",
       "title": "搜尋",
@@ -167,6 +168,7 @@
     "api_url": "Pages 環境變數中 API_URL 應為 Worker 地址，請檢查 Pages 環境變數中 API_URL 是否正確",
     "api_url_slash": "Pages 環境變數中 API_URL 應為 Worker 地址，請檢查 Pages 環境變數中 API_URL 是否正確，且 API_URL 末尾不能有 /",
     "github_callback": "GitHub OAuth 回調地址應為 `https://<Worker 地址>/api/user/github/callback`，請檢查 GitHub OAuth 回調地址是否正確",
+    "load_failed": "載入失敗",
     "not_found": "頁面未找到",
     "permission_denied": "權限不足",
     "title": "錯誤"
@@ -494,11 +496,11 @@
       "preview_note": "僅供預覽。儲存設定後才會套用到站點。",
       "options": {
         "list": "單欄",
-        "masonry": "瀑布流"
+        "masonry": "自適應多欄"
       },
       "preview": {
         "list": "穩定的單欄閱讀節奏，每列只放一張卡片。",
-        "masonry": "依卡片高度自動拼接的多欄版面，適合長短不一的內容。"
+        "masonry": "依卡片高度自動拼接，欄數隨可用寬度自適應。"
       }
     },
     "theme_color": {

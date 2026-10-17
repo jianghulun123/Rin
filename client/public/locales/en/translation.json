@@ -65,6 +65,7 @@
       "confirm": "Are you sure you want to delete this article?",
       "title": "Delete Article"
     },
+    "empty": "No articles yet",
     "search": {
       "placeholder": "Please enter keywords",
       "title": "Search",
@@ -167,6 +168,7 @@
     "api_url": "API_URL in Pages environment variables should be the Worker address. Please check if API_URL in Pages environment variables is correct.",
     "api_url_slash": "API_URL in Pages environment variables should be the Worker address. Please check if API_URL in Pages environment variables is correct and ensure API_URL does not end with a slash (/).",
     "github_callback": "GitHub OAuth callback URL should be `https://<Worker address>/api/user/github/callback`. Please check if the GitHub OAuth callback URL is correct.",
+    "load_failed": "Failed to load",
     "not_found": "Page not found",
     "permission_denied": "Permission denied",
     "title": "Error"
@@ -494,11 +496,11 @@
       "preview_note": "Preview only. The selected layout is applied after saving settings.",
       "options": {
         "list": "Single column",
-        "masonry": "Masonry"
+        "masonry": "Adaptive columns"
       },
       "preview": {
         "list": "A steady reading flow with one card per row.",
-        "masonry": "A staggered multi-column layout that packs cards by height."
+        "masonry": "Cards pack by height, and the column count follows the available width."
       }
     },
     "theme_color": {

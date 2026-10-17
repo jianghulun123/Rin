@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet'
 import { useTranslation } from "react-i18next"
 import { Link, useSearch } from "wouter"
 import { FeedCard } from "../components/feed_card"
+import { FeedListEmpty, FeedListError, feedListClass } from "../components/feed-list"
 import { Waiting } from "../components/loading"
 import { client } from "../app/runtime"
 
@@ -20,23 +21,31 @@ export function SearchPage({ keyword }: { keyword: string }) {
     const { t } = useTranslation()
     const siteConfig = useSiteConfig();
     const query = new URLSearchParams(useSearch());
-    const [status, setStatus] = useState<'loading' | 'idle'>('idle')
+    const [status, setStatus] = useState<'loading' | 'idle' | 'error'>('loading')
     const [feeds, setFeeds] = useState<FeedsData>()
     const page = tryInt(1, query.get("page"))
     const limit = tryInt(siteConfig.pageSize, query.get("limit"))
-    const feedListClass = siteConfig.feedLayout === "masonry" ? "wauto columns-1 gap-5 md:columns-2" : "wauto flex flex-col";
+    const feedListClassValue = feedListClass(siteConfig.feedLayout);
     const feedData = Array.isArray(feeds?.data) ? feeds.data : [];
     const ref = useRef("")
     function fetchFeeds() {
-        if (!keyword) return
+        if (!keyword) {
+            setStatus('idle')
+            return
+        }
+        setStatus('loading')
         client.search.search(keyword, {
             page,
             limit,
         }).then(({ data }) => {
-            if (data) {
-                setFeeds(data)
-                setStatus('idle')
+            if (!data) {
+                setStatus('error')
+                return
             }
+            setFeeds(data)
+            setStatus('idle')
+        }).catch(() => {
+            setStatus('error')
         })
     }
     useEffect(() => {
@@ -57,9 +66,9 @@ export function SearchPage({ keyword }: { keyword: string }) {
                 <meta property="og:type" content="article" />
                 <meta property="og:url" content={document.URL} />
             </Helmet>
-            <Waiting for={status === 'idle'}>
+            <Waiting for={(feeds?.size ?? 0) > 0 || status !== 'loading'}>
                 <main className="w-full flex flex-col justify-center items-center mb-8">
-                    <div className="wauto text-start text-black dark:text-white py-4 text-4xl font-bold">
+                    <div className="w-full text-start text-black dark:text-white py-4 text-4xl font-bold">
                         <p>
                             {t('article.search.title')}
                         </p>
@@ -69,28 +78,34 @@ export function SearchPage({ keyword }: { keyword: string }) {
                             </p>
                         </div>
                     </div>
-                    <Waiting for={status === 'idle'}>
-                        <div className={feedListClass}>
-                            {feedData.map(({ id, ...feed }: any) => (
-                                <FeedCard key={id} id={id} {...feed} />
-                            ))}
-                        </div>
-                        <div className="wauto flex flex-row items-center mt-4 ani-show">
-                            {page > 1 &&
-                                <Link href={`?page=${(page - 1)}&limit=${limit}`}
-                                    className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                    {t('previous')}
-                                </Link>
-                            }
-                            <div className="flex-1" />
-                            {feeds?.hasNext &&
-                                <Link href={`?page=${(page + 1)}&limit=${limit}`}
-                                    className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                    {t('next')}
-                                </Link>
-                            }
-                        </div>
-                    </Waiting>
+                    {status === 'error' ? <FeedListError onRetry={fetchFeeds} /> : (
+                        <Waiting for={status === 'idle'}>
+                            {feedData.length > 0 ? (
+                                <div className={feedListClassValue}>
+                                    {feedData.map(({ id, ...feed }: any) => (
+                                        <FeedCard key={id} id={id} {...feed} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <FeedListEmpty />
+                            )}
+                            <div className="w-full flex flex-row items-center mt-4 ani-show">
+                                {page > 1 &&
+                                    <Link href={`?page=${(page - 1)}&limit=${limit}`}
+                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
+                                        {t('previous')}
+                                    </Link>
+                                }
+                                <div className="flex-1" />
+                                {feeds?.hasNext &&
+                                    <Link href={`?page=${(page + 1)}&limit=${limit}`}
+                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
+                                        {t('next')}
+                                    </Link>
+                                }
+                            </div>
+                        </Waiting>
+                    )}
                 </main>
             </Waiting>
         </>

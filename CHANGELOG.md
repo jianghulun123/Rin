@@ -13,13 +13,25 @@ which automatically generates release notes from commit messages.
 
 ### Added
 
+- Feed lists gain an adaptive multi-column layout: `.wtile` sizes columns from the available width instead of being capped at two columns, so cards fill wide viewports.
+- Feed, search, and hashtag lists now show an empty state and an inline retry state when loading fails.
+
 ### Changed
+
+- Feed list pages use full-width containers instead of the narrow reading column, so cards tile across the viewport.
+- The masonry layout option is no longer described as a fixed two-column layout.
+- Card titles use `h2` so each list page keeps a single `h1`.
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Card cover hover animation had no transition because of a `translation` class typo.
+- Hashtag buttons were nested inside the card link, which is invalid interactive markup.
+- Feed, search, and hashtag requests never left the loading state when they failed.
+- The site header used `w-screen`, pushing its right-aligned controls under the scrollbar.
 
 ### Security
 

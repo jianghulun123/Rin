@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react"
 import { Helmet } from 'react-helmet'
 import { Link, useSearch } from "wouter"
 import { FeedCard } from "../components/feed_card"
+import { FeedListEmpty, FeedListError, feedListClass } from "../components/feed-list"
 import { Waiting } from "../components/loading"
 import { client } from "../app/runtime"
 import { ProfileContext } from "../state/profile"
@@ -29,7 +30,7 @@ export function FeedsPage() {
     const query = new URLSearchParams(useSearch());
     const profile = useContext(ProfileContext);
     const [listState, _setListState] = useState<FeedType>(query.get("type") as FeedType || 'normal')
-    const [status, setStatus] = useState<'loading' | 'idle'>('idle')
+    const [status, setStatus] = useState<'loading' | 'idle' | 'error'>('loading')
     const [feeds, setFeeds] = useState<FeedsMap>({
         draft: { size: 0, data: [], hasNext: false },
         unlisted: { size: 0, data: [], hasNext: false },
@@ -37,24 +38,32 @@ export function FeedsPage() {
     })
     const page = tryInt(1, query.get("page"))
     const limit = tryInt(siteConfig.pageSize, query.get("limit"))
-    const feedListClass = siteConfig.feedLayout === "masonry" ? "wauto columns-1 gap-5 ani-show md:columns-2" : "wauto flex flex-col ani-show";
+    const feedListClassValue = feedListClass(siteConfig.feedLayout);
     const currentFeeds = feeds[listState] ?? { size: 0, data: [], hasNext: false };
     const currentFeedData = Array.isArray(currentFeeds.data) ? currentFeeds.data : [];
     const ref = useRef("")
     function fetchFeeds(type: FeedType) {
+        setStatus('loading')
         client.feed.list({
             page: page,
             limit: limit,
             type: type
         }).then(({ data }) => {
-            if (data) {
-                setFeeds({
-                    ...feeds,
-                    [type]: data
-                })
-                setStatus('idle')
+            if (!data) {
+                setStatus('error')
+                return
             }
+            setFeeds(prev => ({
+                ...prev,
+                [type]: data
+            }))
+            setStatus('idle')
+        }).catch(() => {
+            setStatus('error')
         })
+    }
+    function reload() {
+        fetchFeeds(listState)
     }
     useEffect(() => {
         const key = `${query.get("page")} ${query.get("type")} ${limit}`
@@ -77,9 +86,9 @@ export function FeedsPage() {
                 <meta property="og:type" content="article" />
                 <meta property="og:url" content={document.URL} />
             </Helmet>
-            <Waiting for={feeds.draft.size + feeds.normal.size + feeds.unlisted.size > 0 || status === 'idle'}>
+            <Waiting for={feeds.draft.size + feeds.normal.size + feeds.unlisted.size > 0 || status !== 'loading'}>
                 <main className="w-full flex flex-col justify-center items-center mb-8">
-                    <div className="wauto text-start text-black dark:text-white py-4 text-4xl font-bold">
+                    <div className="w-full text-start text-black dark:text-white py-4 text-4xl font-bold">
                         <p>
                             {listState === 'draft' ? t('draft_bin') : listState === 'normal' ? t('article.title') : t('unlisted')}
                         </p>
@@ -99,28 +108,34 @@ export function FeedsPage() {
                             }
                         </div>
                     </div>
-                    <Waiting for={status === 'idle'}>
-                        <div className={feedListClass}>
-                            {currentFeedData.map(({ id, ...feed }: any) => (
-                                <FeedCard key={id} id={id} {...feed} />
-                            ))}
-                        </div>
-                        <div className="wauto flex flex-row items-center mt-4 ani-show">
-                            {page > 1 &&
-                                <Link href={`/?type=${listState}&page=${(page - 1)}`}
-                                    className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                    {t('previous')}
-                                </Link>
-                            }
-                            <div className="flex-1" />
-                            {currentFeeds.hasNext &&
-                                <Link href={`/?type=${listState}&page=${(page + 1)}`}
-                                    className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                    {t('next')}
-                                </Link>
-                            }
-                        </div>
-                    </Waiting>
+                    {status === 'error' ? <FeedListError onRetry={reload} /> : (
+                        <Waiting for={status === 'idle'}>
+                            {currentFeedData.length > 0 ? (
+                                <div className={feedListClassValue}>
+                                    {currentFeedData.map(({ id, ...feed }: any) => (
+                                        <FeedCard key={id} id={id} {...feed} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <FeedListEmpty />
+                            )}
+                            <div className="w-full flex flex-row items-center mt-4 ani-show">
+                                {page > 1 &&
+                                    <Link href={`/?type=${listState}&page=${(page - 1)}`}
+                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
+                                        {t('previous')}
+                                    </Link>
+                                }
+                                <div className="flex-1" />
+                                {currentFeeds.hasNext &&
+                                    <Link href={`/?type=${listState}&page=${(page + 1)}`}
+                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
+                                        {t('next')}
+                                    </Link>
+                                }
+                            </div>
+                        </Waiting>
+                    )}
                 </main>
             </Waiting>
         </>

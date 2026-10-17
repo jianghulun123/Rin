@@ -65,6 +65,7 @@
       "confirm": "この記事を削除してもよろしいですか？",
       "title": "記事の削除"
     },
+    "empty": "記事がありません",
     "search": {
       "placeholder": "キーワードを入力してください",
       "title": "検索",
@@ -167,6 +168,7 @@
     "api_url": "Pages 環境変数のAPI_URLはWorkerアドレスである必要があります。Pages環境変数のAPI_URLが正しいか確認してください。",
     "api_url_slash": "Pages 環境変数のAPI_URLはWorkerアドレスである必要があります。Pages環境変数のAPI_URLが正しいか、またAPI_URLの末尾にスラッシュ（/）がないか確認してください。",
     "github_callback": "GitHub OAuthコールバックURLは`https://<Workerアドレス>/api/user/github/callback`である必要があります。GitHub OAuthコールバックURLが正しいか確認してください。",
+    "load_failed": "読み込みに失敗しました",
     "not_found": "ページが見つかりません",
     "permission_denied": "権限がありません",
     "title": "エラー"
@@ -484,11 +486,11 @@
       "preview_note": "プレビュー専用です。保存後にサイトへ適用されます。",
       "options": {
         "list": "1カラム",
-        "masonry": "Masonry"
+        "masonry": "可変マルチカラム"
       },
       "preview": {
         "list": "1行に1枚ずつ並ぶ、安定した読みやすいレイアウトです。",
-        "masonry": "カードの高さに応じて詰める、多段の瀑布型レイアウトです。"
+        "masonry": "カードの高さに応じて詰め、段数は利用可能な幅に合わせて変わります。"
       }
     },
     "theme_color": {

@@ -55,7 +55,7 @@ function FeedCardImage({ src, variant }: { src: string; variant: FeedCardVariant
                 height={height}
                 onLoad={onLoad}
                 onError={onError}
-                className={`absolute inset-0 h-full w-full object-cover object-center hover:scale-105 translation duration-300 ${failed || (blurhash && !loaded) ? "opacity-0" : "opacity-100"
+                className={`absolute inset-0 h-full w-full object-cover object-center transition duration-300 hover:scale-105 ${failed || (blurhash && !loaded) ? "opacity-0" : "opacity-100"
                     }`}
             />
         </div>
@@ -109,41 +109,65 @@ export function FeedCard({ id, title, avatar, draft, listed, top, summary, hasht
     const safeHashtags = Array.isArray(hashtags) ? hashtags : [];
     const activeVariant = normalizeFeedCardVariant(variant ?? siteConfig.feedCardVariant);
     const styles = FEED_CARD_STYLES[activeVariant];
-    const body = (
-        <div className={styles.card}>
-            {avatar ? (
-                <div className={styles.imageWrap}>
-                    <FeedCardImage src={avatar} variant={activeVariant} />
-                </div>
-            ) : null}
-            <div className={activeVariant === "editorial" ? "px-2 pb-2" : ""}>
-                <h1 className={styles.title}>{title}</h1>
-                <p className={`space-x-2 ${styles.meta}`}>
-                    <span title={new Date(createdAt).toLocaleString()}>
-                        {createdAt === updatedAt ? timeago(createdAt) : t('feed_card.published$time', { time: timeago(createdAt) })}
+    const heading = (
+        <h2 className={styles.title}>{title}</h2>
+    );
+    const detail = (
+        <>
+            <p className={`space-x-2 ${styles.meta}`}>
+                <span title={new Date(createdAt).toLocaleString()}>
+                    {createdAt === updatedAt ? timeago(createdAt) : t('feed_card.published$time', { time: timeago(createdAt) })}
+                </span>
+                {createdAt !== updatedAt &&
+                    <span title={new Date(updatedAt).toLocaleString()}>
+                        {t('feed_card.updated$time', { time: timeago(updatedAt) })}
                     </span>
-                    {createdAt !== updatedAt &&
-                        <span title={new Date(updatedAt).toLocaleString()}>
-                            {t('feed_card.updated$time', { time: timeago(updatedAt) })}
-                        </span>
-                    }
-                </p>
-                <p className={`space-x-2 ${styles.meta} ${activeVariant === "editorial" ? "mt-2" : ""}`}>
-                    {draft === 1 && <span>{t("draft")}</span>}
-                    {listed === 0 && <span>{t("unlisted")}</span>}
-                    {top === 1 && <span className="text-theme">{t('article.top.title')}</span>}
-                </p>
-                <p className={`whitespace-pre-line break-words [overflow-wrap:anywhere] ${styles.summary} ${activeVariant === "editorial" ? "mt-4 max-w-3xl" : ""}`}>{summary}</p>
-                {safeHashtags.length > 0 &&
-                    <div className={`flex flex-row flex-wrap justify-start gap-2 ${activeVariant === "editorial" ? "mt-4" : "mt-2 gap-x-2"}`}>
-                        {safeHashtags.map(({ name }, index) => (
-                            <HashTag key={index} name={name} />
-                        ))}
-                    </div>
                 }
-            </div>
+            </p>
+            <p className={`space-x-2 ${styles.meta} ${activeVariant === "editorial" ? "mt-2" : ""}`}>
+                {draft === 1 && <span>{t("draft")}</span>}
+                {listed === 0 && <span>{t("unlisted")}</span>}
+                {top === 1 && <span className="text-theme">{t('article.top.title')}</span>}
+            </p>
+            <p className={`whitespace-pre-line break-words [overflow-wrap:anywhere] ${styles.summary} ${activeVariant === "editorial" ? "mt-4 max-w-3xl" : ""}`}>{summary}</p>
+        </>
+    );
+    const cover = avatar ? (
+        <div className={styles.imageWrap}>
+            <FeedCardImage src={avatar} variant={activeVariant} />
+        </div>
+    ) : null;
+    const text = (
+        <div className={activeVariant === "editorial" ? "px-2 pb-2" : ""}>
+            {heading}
+            {detail}
+        </div>
+    );
+    const tags = safeHashtags.length > 0 && (
+        <div className={`flex flex-row flex-wrap justify-start gap-2 ${activeVariant === "editorial" ? "mt-4 px-2" : "mt-2 gap-x-2"}`}>
+            {safeHashtags.map(({ name }, index) => (
+                <HashTag key={index} name={name} plain={preview} />
+            ))}
         </div>
     );
 
-    return preview ? body : <Link href={`/feed/${id}`} target="_blank" rel="noopener noreferrer" className="block min-w-0 w-full">{body}</Link>;
+    return (
+        <div className={styles.card}>
+            {preview ? (
+                <>
+                    {cover}
+                    {text}
+                    {tags}
+                </>
+            ) : (
+                <>
+                    <Link href={`/feed/${id}`} target="_blank" rel="noopener noreferrer" className="block min-w-0 w-full">
+                        {cover}
+                        {text}
+                    </Link>
+                    {tags}
+                </>
+            )}
+        </div>
+    );
 }
