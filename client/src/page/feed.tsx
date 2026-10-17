@@ -25,6 +25,7 @@ import {
   ARTICLE_TRANSLATION_LANGUAGE_LABELS,
   resolveArticleTranslationLanguage,
 } from "../utils/article-translation";
+import { translateTextInBrowser } from "../utils/browser-translation";
 
 function extractFirstMarkdownImageUrl(content: string) {
   const match = /!\[.*?\]\((\S+?)(?:\s+"[^"]*")?\)/.exec(content);
@@ -50,9 +51,14 @@ export function FeedPage({ id, TOC, clean, refreshTOC }: { id: string, TOC: () =
   const config = useContext(ClientConfigContext);
   const counterEnabled = config.getBoolean('counter.enabled');
   const translationEnabled = config.getBoolean('translation.enabled');
+  const browserFallbackEnabled = config.getBoolean('translation.browser_fallback');
+  const browserFallbackApiUrl = config.get<string>('translation.browser_fallback_api_url') ?? '';
+  const browserFallbackModel = config.get<string>('translation.browser_fallback_model') ?? '';
   const translationLanguage = resolveArticleTranslationLanguage(i18n.language);
   const [translation, setTranslation] = useState<FeedTranslation>();
   const [showOriginal, setShowOriginal] = useState(false);
+  const [browserTranslating, setBrowserTranslating] = useState(false);
+  const browserAttemptRef = useRef("");
   const translationReady = translation?.status === "completed" && Boolean(translation.content.trim());
   const translationPending = translation?.status === "pending" || translation?.status === "processing";
   const translationActive = translationReady && !showOriginal;
@@ -61,9 +67,13 @@ export function FeedPage({ id, TOC, clean, refreshTOC }: { id: string, TOC: () =
   const translationNotice =
     translation?.status === "failed"
       ? t("article_translation.status.failed")
-      : translationPending
-        ? t(`article_translation.status.${translation!.status}`)
-        : null;
+      : browserTranslating
+        ? t("article_translation.status.processing")
+        : translationPending
+          ? t(`article_translation.status.${translation!.status}`)
+          : null;
+  const browserFallbackUsable =
+    browserFallbackEnabled && Boolean(browserFallbackApiUrl) && Boolean(browserFallbackModel);
   const hasAISummary = Boolean(feed?.ai_summary?.trim());
   const showAISummaryState = feed?.ai_summary_status === "pending" || feed?.ai_summary_status === "processing" || feed?.ai_summary_status === "failed";
   const hashtags = Array.isArray(feed?.hashtags) ? feed.hashtags : [];
@@ -165,6 +175,56 @@ export function FeedPage({ id, TOC, clean, refreshTOC }: { id: string, TOC: () =
     setTranslation(undefined);
     setShowOriginal(false);
   }, [id, translationLanguage]);
+  useEffect(() => {
+    // Only the server's own failure is retried here: a keyless endpoint is required,
+    // so the visitor's browser can call it without ever seeing an API key.
+    if (!feed || !translationLanguage || !browserFallbackUsable) return;
+    if (translation?.status !== "failed" || translation.failure_reason !== "risk_control") return;
+
+    const attemptKey = `${feed.id}:${translationLanguage}`;
+    if (browserAttemptRef.current === attemptKey) return;
+    browserAttemptRef.current = attemptKey;
+
+    let cancelled = false;
+    setBrowserTranslating(true);
+
+    const run = async () => {
+      try {
+        const config = { apiUrl: browserFallbackApiUrl, model: browserFallbackModel };
+        const title = feed.title?.trim()
+          ? await translateTextInBrowser(config, feed.title, translationLanguage)
+          : "";
+        const content = await translateTextInBrowser(config, feed.content, translationLanguage);
+        if (cancelled) return;
+        // Mirrors what the server stores: translated title plus translated body.
+        setTranslation({
+          language: translationLanguage,
+          status: "completed",
+          title,
+          content,
+          error: "",
+        });
+      } catch {
+        // The server error already explains the failure; a browser retry that also
+        // fails leaves that message in place rather than replacing it.
+      } finally {
+        if (!cancelled) setBrowserTranslating(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    feed,
+    translation,
+    translationLanguage,
+    browserFallbackUsable,
+    browserFallbackApiUrl,
+    browserFallbackModel,
+  ]);
   useEffect(() => {
     if (!translationActive) return;
     refreshTOC();

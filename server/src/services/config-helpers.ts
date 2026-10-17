@@ -8,6 +8,7 @@ import {
 import {
   getFrontendAIEnabled,
   getFrontendTranslationEnabled,
+  getTranslationConfig,
   readAIConfigFromMap,
   readTranslationConfigFromValues,
 } from "../utils/db-config";
@@ -265,11 +266,21 @@ export async function buildClientConfigResponse(
   const translationEnabled = profile
     ? await profile("client_translation_enabled", () => getFrontendTranslationEnabled(serverConfig))
     : await getFrontendTranslationEnabled(serverConfig);
+  const translationConfig = profile
+    ? await profile("client_translation_config", () => getTranslationConfig(serverConfig))
+    : await getTranslationConfig(serverConfig);
+
+  // The browser may only retry a translation itself when the endpoint needs no
+  // credentials: anything else would ship the API key to every visitor.
+  const browserFallbackEnabled = translationEnabled && translationConfig.api_key.trim() === "";
 
   return {
     ...clientConfigData,
     "ai_summary.enabled": aiEnabled,
     "translation.enabled": translationEnabled,
+    "translation.browser_fallback": browserFallbackEnabled,
+    "translation.browser_fallback_api_url": browserFallbackEnabled ? translationConfig.api_url : "",
+    "translation.browser_fallback_model": browserFallbackEnabled ? translationConfig.model : "",
   };
 }
 

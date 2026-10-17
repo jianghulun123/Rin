@@ -1,6 +1,11 @@
-import type { TranslationConfig } from "@rin/api";
-import { TRANSLATION_LANGUAGES } from "@rin/config";
-import { stripReasoningTags } from "./ai";
+import type { FeedTranslationFailureReason, TranslationConfig } from "@rin/api";
+import {
+    TRANSLATION_LANGUAGES,
+    buildTranslationChatCompletionsUrl,
+    buildTranslationPrompt,
+    extractTranslationContent,
+    splitTranslationChunks,
+} from "@rin/config";
 import { getTranslationConfig } from "./db-config";
 
 type ConfigReader = {
@@ -10,39 +15,8 @@ type ConfigReader = {
 // The public Index-Translate API is keyless and identifies callers by this exact
 // client name; a spoofed browser UA is treated as scraping and answered with 412.
 const TRANSLATION_USER_AGENT = "Index-Translate-Client/1.0";
-const CHUNK_MAX_LENGTH = 1800;
 
-// Prompt names are kept in Chinese on purpose: the upstream MT model is tuned
-// for Chinese instructions, matching the provider's own usage sample.
-const PROMPT_LANGUAGE_NAMES: Record<string, string> = {
-    ja: "日语",
-    en: "英语",
-    "zh-TW": "繁体中文",
-    de: "德语",
-    ru: "俄语",
-};
-
-export function normalizeTranslationBaseUrl(apiUrl: string): string {
-    return apiUrl
-        .trim()
-        .replace(/\/+$/g, "")
-        .replace(/\/chat\/completions$/i, "");
-}
-
-export function buildTranslationChatCompletionsUrl(apiUrl: string): string {
-    const normalizedBaseUrl = normalizeTranslationBaseUrl(apiUrl);
-
-    if (!normalizedBaseUrl) {
-        throw new Error("Translation API URL not configured");
-    }
-
-    return `${normalizedBaseUrl}/chat/completions`;
-}
-
-export function buildTranslationPrompt(text: string, language: string): string {
-    const languageName = PROMPT_LANGUAGE_NAMES[language] ?? language;
-    return `把这段话翻译成${languageName}：${text}`;
-}
+export { buildTranslationChatCompletionsUrl, buildTranslationPrompt, splitTranslationChunks };
 
 export function normalizeTranslationLanguage(language: string | undefined | null): string | null {
     if (!language) {
@@ -65,38 +39,22 @@ export function normalizeTranslationLanguage(language: string | undefined | null
     return matched ?? null;
 }
 
-export function splitTranslationChunks(content: string): string[] {
-    if (content.length <= CHUNK_MAX_LENGTH) {
-        return content.trim() ? [content] : [];
+const ERROR_BODY_MAX_LENGTH = 300;
+
+type TranslationFailure = Error & { failureReason?: FeedTranslationFailureReason };
+
+function translationFailure(message: string, failureReason?: FeedTranslationFailureReason): TranslationFailure {
+    const error: TranslationFailure = new Error(message);
+    if (failureReason) {
+        error.failureReason = failureReason;
     }
-
-    const chunks: string[] = [];
-    let current = "";
-
-    for (const line of content.split("\n")) {
-        if (current && current.length + line.length + 1 > CHUNK_MAX_LENGTH) {
-            chunks.push(current);
-            current = "";
-        }
-
-        if (line.length > CHUNK_MAX_LENGTH) {
-            for (let offset = 0; offset < line.length; offset += CHUNK_MAX_LENGTH) {
-                chunks.push(line.slice(offset, offset + CHUNK_MAX_LENGTH));
-            }
-            continue;
-        }
-
-        current = current ? `${current}\n${line}` : line;
-    }
-
-    if (current) {
-        chunks.push(current);
-    }
-
-    return chunks;
+    return error;
 }
 
-const ERROR_BODY_MAX_LENGTH = 300;
+/** Reads the actionable cause off a thrown translation error, if there is one. */
+export function getTranslationFailureReason(error: unknown): FeedTranslationFailureReason | undefined {
+    return (error as TranslationFailure | undefined)?.failureReason;
+}
 
 /**
  * Turns an upstream error body into one short line. bilibili risk control answers
@@ -112,13 +70,17 @@ async function describeErrorResponse(response: Response): Promise<string> {
 
     if (/<html|<!doctype|<\/body>/i.test(body)) {
         if (response.status === 412 || /security control policy|安全风控/.test(body)) {
-            return "Upstream risk control rejected the request (HTTP 412). The public Index-Translate endpoint blocks Cloudflare Workers traffic; set a self-hosted endpoint in Translation settings.";
+            return "Upstream risk control rejected the request (HTTP 412). The public Index-Translate endpoint blocks server-side traffic; the browser retries it when possible.";
         }
 
         return `Upstream returned an HTML error page (${response.status}) instead of JSON. Check that the API URL points to an OpenAI-compatible /v1 endpoint.`;
     }
 
     return body.length > ERROR_BODY_MAX_LENGTH ? `${body.slice(0, ERROR_BODY_MAX_LENGTH)}…` : body;
+}
+
+function isRiskControlRejection(response: Response, description: string): boolean {
+    return response.status === 412 || /risk control rejected/i.test(description);
 }
 
 async function requestTranslation(
@@ -148,19 +110,14 @@ async function requestTranslation(
     });
 
     if (!response.ok) {
-        throw new Error(`Translation API error ${response.status}: ${await describeErrorResponse(response)}`);
+        const description = await describeErrorResponse(response);
+        throw translationFailure(
+            `Translation API error ${response.status}: ${description}`,
+            isRiskControlRejection(response, description) ? "risk_control" : undefined,
+        );
     }
 
-    const data = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-    };
-    const translated = stripReasoningTags(data.choices?.[0]?.message?.content ?? "");
-
-    if (!translated) {
-        throw new Error("Empty response from translation API");
-    }
-
-    return translated;
+    return extractTranslationContent(await response.json());
 }
 
 export async function translateText(
@@ -182,7 +139,10 @@ export async function generateFeedTranslation(
     serverConfig: ConfigReader,
     feed: { title: string | null; content: string },
     language: string,
-): Promise<{ ok: true; title: string; content: string } | { ok: false; error: string }> {
+): Promise<
+    | { ok: true; title: string; content: string }
+    | { ok: false; error: string; failureReason?: FeedTranslationFailureReason }
+> {
     const config = await getTranslationConfig(serverConfig);
 
     if (!config.enabled) {
@@ -198,6 +158,7 @@ export async function generateFeedTranslation(
         return {
             ok: false,
             error: error instanceof Error ? error.message : String(error),
+            failureReason: getTranslationFailureReason(error),
         };
     }
 }

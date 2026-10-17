@@ -103,6 +103,7 @@ export async function ensureFeedTranslation(
     .set({
       translations: updateTranslationEntry(feed.translations, normalizedLanguage, {
         status: "pending",
+        title: "",
         content: "",
         error: "",
       }),
@@ -203,8 +204,8 @@ export async function processFeedTranslationTask(
         latest?.translations ?? feed.translations,
         payload.language,
         result.ok
-          ? { status: "completed", content: result.content, error: "" }
-          : { status: "failed", error: result.error },
+          ? { status: "completed", title: result.title, content: result.content, error: "" }
+          : { status: "failed", error: result.error, failure_reason: result.failureReason },
       ),
     })
     .where(eq(feeds.id, feed.id));

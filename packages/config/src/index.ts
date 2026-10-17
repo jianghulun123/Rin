@@ -18,6 +18,9 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "site.description": "A lightweight personal blogging system",
     "site.avatar": "",
     "site.page_size": 5,
+    "translation.browser_fallback": false,
+    "translation.browser_fallback_api_url": "",
+    "translation.browser_fallback_model": "",
   }),
 );
 
@@ -51,6 +54,8 @@ export const AI_CONFIG_KEYS = [
 ] as const;
 
 export const TRANSLATION_CONFIG_PREFIX = "translation.";
+
+export * from "./translation";
 
 export const TRANSLATION_CONFIG_KEYS = [
   `${TRANSLATION_CONFIG_PREFIX}enabled`,

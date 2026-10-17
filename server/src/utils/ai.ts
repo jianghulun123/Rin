@@ -1,4 +1,7 @@
 import { getAIConfig } from "./db-config";
+import { stripReasoningTags } from "@rin/config";
+
+export { stripReasoningTags };
 
 type ConfigReader = {
     get(key: string): Promise<unknown>;
@@ -268,20 +271,6 @@ export async function generateAISummaryResult(
             error: error instanceof Error ? error.message : String(error),
         };
     }
-}
-
-export function stripReasoningTags(text: string): string {
-    if (!text) return "";
-
-    let out = text;
-    out = out.replace(/<think(?:\s[^>]*)?>[\s\S]*?<\/think\s*>/gi, "");
-    out = out.replace(/<think(?:\s[^>]*)?>[\s\S]*$/gi, "");
-    out = out.replace(/<thinking(?:\s[^>]*)?>[\s\S]*?<\/thinking\s*>/gi, "");
-    out = out.replace(/<thinking(?:\s[^>]*)?>[\s\S]*$/gi, "");
-    out = out.replace(/<reasoning(?:\s[^>]*)?>[\s\S]*?<\/reasoning\s*>/gi, "");
-    out = out.replace(/<reasoning(?:\s[^>]*)?>[\s\S]*$/gi, "");
-
-    return out.trim();
 }
 
 /**
