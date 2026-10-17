@@ -57,6 +57,14 @@
       );
     }
 
+    .hazard-fade {
+      background-image: linear-gradient(90deg, rgb(242 193 78 / 0) 0%, rgb(242 193 78 / 0.35) 55%, rgb(242 193 78 / 0.85) 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 55%, #000 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 55%, #000 100%);
+    }
+
     .rin-marquee {
       animation: rin-marquee 26s linear infinite;
     }

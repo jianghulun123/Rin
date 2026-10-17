@@ -27,6 +27,7 @@ which automatically generates release notes from commit messages.
 - The masonry layout option is no longer described as a fixed two-column layout.
 - Masonry lists no longer stretch every card in a row to the tallest one; cards keep their own height and flow in columns.
 - Card titles use `h2` so each list page keeps a single `h1`.
+- The hazard tape fades out behind a frosted gradient at both ends instead of ending on a hard edge.
 
 ### Deprecated
 
