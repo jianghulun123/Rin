@@ -500,7 +500,7 @@
       },
       "preview": {
         "list": "A steady reading flow with one card per row.",
-        "masonry": "Four cards per row on wide screens, with one to four columns following the available width."
+        "masonry": "Four columns at most on wide screens, where each card keeps its own height and flows vertically."
       }
     },
     "theme_color": {

@@ -25,6 +25,7 @@ which automatically generates release notes from commit messages.
 - The footer bottom bar splits into three parts: copyright and RSS on the left, the hazard tape in the middle, and the theme switcher on the right.
 - Feed list pages use full-width containers instead of the narrow reading column, so cards tile across the viewport.
 - The masonry layout option is no longer described as a fixed two-column layout.
+- Masonry lists no longer stretch every card in a row to the tallest one; cards keep their own height and flow in columns.
 - Card titles use `h2` so each list page keeps a single `h1`.
 
 ### Deprecated
