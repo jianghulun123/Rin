@@ -7,7 +7,9 @@ type ConfigReader = {
     get(key: string): Promise<unknown>;
 };
 
-const TRANSLATION_USER_AGENT = "Mozilla/5.0";
+// The public Index-Translate API is keyless and identifies callers by this exact
+// client name; a spoofed browser UA is treated as scraping and answered with 412.
+const TRANSLATION_USER_AGENT = "Index-Translate-Client/1.0";
 const CHUNK_MAX_LENGTH = 1800;
 
 // Prompt names are kept in Chinese on purpose: the upstream MT model is tuned
@@ -94,19 +96,50 @@ export function splitTranslationChunks(content: string): string[] {
     return chunks;
 }
 
+const ERROR_BODY_MAX_LENGTH = 300;
+
+/**
+ * Turns an upstream error body into one short line. bilibili risk control answers
+ * 4xx with a full HTML captcha page; storing that verbatim buries the real cause
+ * in the settings panel and in the per-language failure state.
+ */
+async function describeErrorResponse(response: Response): Promise<string> {
+    const body = (await response.text()).trim();
+
+    if (!body) {
+        return response.statusText || "Empty error response";
+    }
+
+    if (/<html|<!doctype|<\/body>/i.test(body)) {
+        if (response.status === 412 || /security control policy|安全风控/.test(body)) {
+            return "Upstream risk control rejected the request (HTTP 412). The public Index-Translate endpoint blocks Cloudflare Workers traffic; set a self-hosted endpoint in Translation settings.";
+        }
+
+        return `Upstream returned an HTML error page (${response.status}) instead of JSON. Check that the API URL points to an OpenAI-compatible /v1 endpoint.`;
+    }
+
+    return body.length > ERROR_BODY_MAX_LENGTH ? `${body.slice(0, ERROR_BODY_MAX_LENGTH)}…` : body;
+}
+
 async function requestTranslation(
     config: TranslationConfig,
     prompt: string,
 ): Promise<string> {
-    const apiKey = config.api_key.trim() || "empty";
+    // The public endpoint needs no credentials, and sending a placeholder token
+    // makes the request look forged to the upstream risk control.
+    const apiKey = config.api_key.trim();
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "User-Agent": TRANSLATION_USER_AGENT,
+    };
+
+    if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+    }
 
     const response = await fetch(buildTranslationChatCompletionsUrl(config.api_url), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-            "User-Agent": TRANSLATION_USER_AGENT,
-        },
+        headers,
         body: JSON.stringify({
             model: config.model,
             messages: [{ role: "user", content: prompt }],
@@ -115,8 +148,7 @@ async function requestTranslation(
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Translation API error ${response.status}: ${errorText}`);
+        throw new Error(`Translation API error ${response.status}: ${await describeErrorResponse(response)}`);
     }
 
     const data = (await response.json()) as {
