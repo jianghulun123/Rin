@@ -524,7 +524,43 @@
     "wordpress": {
       "desc": "上傳 WordPress 匯出的 XML 文件",
       "title": "從 WordPress 匯入"
-    }
+    },
+      "translation": {
+        "title": "文章翻譯",
+        "enable": {
+          "title": "啟用文章翻譯",
+          "desc": "依讀者語言翻譯文章正文並自動顯示。"
+        },
+        "model": {
+          "title": "翻譯模型",
+          "options": {
+            "fast": "超快輕量",
+            "balanced": "均衡推薦",
+            "quality": "高品質旗艦"
+          }
+        },
+        "api_key": {
+          "title": "API Key",
+          "set": "已設定",
+          "placeholder_set": "留空則保留已儲存的金鑰",
+          "hint": "多數翻譯介面接受任意佔位字元。"
+        },
+        "api_url": {
+          "title": "API 位址"
+        },
+        "test": {
+          "title": "測試翻譯",
+          "desc": "送出一句範例文字，驗證介面、模型與金鑰。",
+          "button": "測試",
+          "language": "目標語言",
+          "prompt": "測試文字",
+          "prompt_placeholder": "今天辛苦了！",
+          "success": "翻譯成功",
+          "failed": "翻譯失敗",
+          "error": "翻譯請求發生錯誤",
+          "http_error$status": "HTTP 狀態：{{status}}"
+        }
+      }
   },
   "sitename": "網站名稱",
   "sort_order": "排序",
@@ -757,5 +793,16 @@
   "sort_latest": "最新",
   "sort_popular": "熱門",
   "total_tags": "共 {{count}} 個標籤",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+    "article_translation": {
+      "label": "已翻譯",
+      "show_original": "查看原文",
+      "show_translation": "查看譯文",
+      "status": {
+        "failed": "翻譯失敗",
+        "idle": "未翻譯",
+        "pending": "翻譯已進入佇列",
+        "processing": "翻譯中"
+      }
+    }
 }

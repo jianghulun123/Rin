@@ -23,6 +23,7 @@ const useTableOfContents = (selector: string) => {
     const { t } = useTranslation()
     const io = useRef<IntersectionObserver | null>(null);
     const [ref, setRef] = useState("-1")
+    const [nonce, setNonce] = useState(0)
     const lastRef = useRef("")
 
     useEffect(() => {
@@ -75,13 +76,23 @@ const useTableOfContents = (selector: string) => {
         return () => {
             if (io.current) io.current.disconnect()
         }
-    }, [ref])
+    }, [ref, nonce])
 
     const cleanup = (newId: string) => {
         if (lastRef.current === newId) return
         setRef(newId)
         if (io.current) io.current.disconnect()
     }
+
+    // Rebuilds the outline after the rendered content changes in place, e.g.
+    // when an article is swapped for its translation.
+    const refresh = useCallback(() => {
+        document
+            .querySelectorAll(`${selector} [data-id]`)
+            .forEach((element) => element.removeAttribute('data-id'))
+        lastRef.current = ""
+        setNonce((current) => current + 1)
+    }, [selector])
 
     const tocStateRef = useRef({ tableOfContents, activeIndex, t })
     tocStateRef.current = { tableOfContents, activeIndex, t }
@@ -114,7 +125,7 @@ const useTableOfContents = (selector: string) => {
     }, [])
 
     return {
-        TOC, cleanup
+        TOC, cleanup, refresh
     }
 }
 

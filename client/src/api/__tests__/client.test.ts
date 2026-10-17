@@ -20,6 +20,7 @@ const createFeed = (id: number, title: string): Feed => ({
   ai_summary: '',
   ai_summary_status: 'idle',
   ai_summary_error: '',
+  translations: [],
   hashtags: [],
   user: {
     avatar: null,

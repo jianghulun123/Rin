@@ -1,5 +1,10 @@
-import type { AIConfig } from "@rin/api";
-import { AI_CONFIG_PREFIX, DEFAULT_AI_CONFIG } from "@rin/config";
+import type { AIConfig, TranslationConfig } from "@rin/api";
+import {
+    AI_CONFIG_PREFIX,
+    DEFAULT_AI_CONFIG,
+    DEFAULT_TRANSLATION_CONFIG,
+    TRANSLATION_CONFIG_PREFIX,
+} from "@rin/config";
 
 type ConfigReader = {
     get(key: string): Promise<unknown>;
@@ -88,4 +93,72 @@ export async function getAIConfigForFrontend(
         api_key: "",
         api_key_set: aiConfig.api_key.length > 0,
     };
+}
+
+const TRANSLATION_CONFIG_FIELDS = ["enabled", "model", "api_key", "api_url"] as const;
+
+export function readTranslationConfigFromValues(values: Record<string, unknown>): TranslationConfig {
+    const config: TranslationConfig = { ...DEFAULT_TRANSLATION_CONFIG };
+
+    const enabled = values[TRANSLATION_CONFIG_PREFIX + "enabled"];
+    if (enabled != null) {
+        config.enabled = enabled === true || enabled === "true";
+    }
+
+    const model = values[TRANSLATION_CONFIG_PREFIX + "model"];
+    if (typeof model === "string" && model.trim()) {
+        config.model = model.trim();
+    }
+
+    const apiKey = values[TRANSLATION_CONFIG_PREFIX + "api_key"];
+    if (typeof apiKey === "string" && apiKey.trim()) {
+        config.api_key = apiKey;
+    }
+
+    const apiUrl = values[TRANSLATION_CONFIG_PREFIX + "api_url"];
+    if (typeof apiUrl === "string" && apiUrl.trim()) {
+        config.api_url = apiUrl.trim();
+    }
+
+    return config;
+}
+
+export async function getTranslationConfig(config: ConfigReader): Promise<TranslationConfig> {
+    const values = await Promise.all(
+        TRANSLATION_CONFIG_FIELDS.map(
+            async (field) => [field, await config.get(TRANSLATION_CONFIG_PREFIX + field)] as const,
+        ),
+    );
+
+    return readTranslationConfigFromValues(
+        Object.fromEntries(
+            values.map(([field, value]) => [TRANSLATION_CONFIG_PREFIX + field, value]),
+        ),
+    );
+}
+
+export async function getFrontendTranslationEnabled(config: ConfigReader): Promise<boolean> {
+    const enabled = await config.get(TRANSLATION_CONFIG_PREFIX + "enabled");
+    return enabled == null ? DEFAULT_TRANSLATION_CONFIG.enabled : enabled === true || enabled === "true";
+}
+
+export async function setTranslationConfig(
+    config: ConfigWriter,
+    updates: Partial<TranslationConfig>,
+): Promise<void> {
+    for (const field of TRANSLATION_CONFIG_FIELDS) {
+        const value = updates[field];
+        if (value === undefined) {
+            continue;
+        }
+
+        // Keep the stored key when the admin leaves the masked placeholder untouched.
+        if (field === "api_key" && typeof value === "string" && value.trim() === "") {
+            continue;
+        }
+
+        await config.set(TRANSLATION_CONFIG_PREFIX + field, value, false);
+    }
+
+    await config.save();
 }

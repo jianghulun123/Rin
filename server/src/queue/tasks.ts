@@ -1,4 +1,5 @@
 export const FEED_AI_SUMMARY_TASK = "feed.ai-summary.generate" as const;
+export const FEED_TRANSLATION_TASK = "feed.translation.generate" as const;
 
 export type FeedAISummaryStatus =
   | "idle"
@@ -18,7 +19,19 @@ export interface FeedAISummaryTask {
   payload: FeedAISummaryTaskPayload;
 }
 
-export type QueueTask = FeedAISummaryTask;
+export interface FeedTranslationTaskPayload {
+  feedId: number;
+  language: string;
+  expectedUpdatedAt?: string;
+  expectedUpdatedAtUnix?: number;
+}
+
+export interface FeedTranslationTask {
+  type: typeof FEED_TRANSLATION_TASK;
+  payload: FeedTranslationTaskPayload;
+}
+
+export type QueueTask = FeedAISummaryTask | FeedTranslationTask;
 
 export function createFeedAISummaryTask(
   payload: FeedAISummaryTaskPayload,
@@ -29,23 +42,46 @@ export function createFeedAISummaryTask(
   };
 }
 
+export function createFeedTranslationTask(
+  payload: FeedTranslationTaskPayload,
+): FeedTranslationTask {
+  return {
+    type: FEED_TRANSLATION_TASK,
+    payload,
+  };
+}
+
+function hasExpectedUpdatedAt(payload: {
+  expectedUpdatedAt?: string;
+  expectedUpdatedAtUnix?: number;
+}): boolean {
+  return (
+    typeof payload?.expectedUpdatedAtUnix === "number" ||
+    typeof payload?.expectedUpdatedAt === "string"
+  );
+}
+
 export function isQueueTask(value: unknown): value is QueueTask {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   const task = value as Partial<QueueTask>;
-  if (task.type !== FEED_AI_SUMMARY_TASK) {
-    return false;
+
+  if (task.type === FEED_AI_SUMMARY_TASK) {
+    const payload = task.payload as Partial<FeedAISummaryTaskPayload> | undefined;
+    return Boolean(payload) && typeof payload?.feedId === "number" && hasExpectedUpdatedAt(payload!);
   }
 
-  const payload = task.payload as Partial<FeedAISummaryTaskPayload> | undefined;
-  return (
-    Boolean(payload) &&
-    typeof payload?.feedId === "number" &&
-    (
-      typeof payload?.expectedUpdatedAtUnix === "number" ||
-      typeof payload?.expectedUpdatedAt === "string"
-    )
-  );
+  if (task.type === FEED_TRANSLATION_TASK) {
+    const payload = task.payload as Partial<FeedTranslationTaskPayload> | undefined;
+    return (
+      Boolean(payload) &&
+      typeof payload?.feedId === "number" &&
+      typeof payload?.language === "string" &&
+      hasExpectedUpdatedAt(payload!)
+    );
+  }
+
+  return false;
 }

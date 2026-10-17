@@ -29,6 +29,11 @@ export interface Feed {
   ai_summary: string;
   ai_summary_status: "idle" | "pending" | "processing" | "completed" | "failed";
   ai_summary_error: string;
+  translations: Array<{
+    language: string;
+    status: "idle" | "pending" | "processing" | "completed" | "failed";
+    error: string;
+  }>;
   hashtags: Array<{ id: number; name: string }>;
   user: {
     avatar: string | null;
@@ -280,6 +285,23 @@ export interface AIConfig {
   model: string;
   api_key: string;
   api_url: string;
+}
+
+export interface TranslationConfig {
+  enabled: boolean;
+  model: string;
+  api_key: string;
+  api_url: string;
+}
+
+export type FeedTranslationStatus = "idle" | "pending" | "processing" | "completed" | "failed";
+
+export interface FeedTranslation {
+  language: string;
+  status: FeedTranslationStatus;
+  title: string;
+  content: string;
+  error: string;
 }
 
 // ============================================================================

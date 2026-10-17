@@ -22,6 +22,8 @@ import { HyperLogLog } from "../utils/hyperloglog";
 import { extractImageWithMetadata } from "../utils/image";
 import { stripMarkdown } from "../utils/markdown";
 import { syncFeedAISummaryQueueState } from "./feed-ai-summary";
+import { ensureFeedTranslation, toTranslationViews } from "./feed-translation";
+import { resetTranslations } from "../utils/feed-translation-store";
 import { bindTagToPost } from "./tag";
 import { clearFeedCache, clearFeedCollectionCaches } from "./clear-feed-cache";
 export { clearFeedCache } from "./clear-feed-cache";
@@ -121,7 +123,7 @@ export function FeedService(): Hono<{
             orderBy: [desc(feeds.top), desc(feeds.createdAt), desc(feeds.updatedAt)],
             offset: page_num * limit_num,
             limit: limit_num + 1,
-        }))).map(({ content, hashtags, summary, ...other }: any) => {
+        }))).map(({ content, hashtags, summary, translations: _translations, ...other }: any) => {
             const avatar = extractImageWithMetadata(content);
             const plainText = stripMarkdown(content);
             return {
@@ -253,8 +255,9 @@ export function FeedService(): Hono<{
             return c.text('Permission denied', 403);
         }
 
-        const { hashtags, ...other } = feed;
+        const { hashtags, translations: _translations, ...other } = feed;
         const hashtags_flatten = hashtags.map((f: any) => f.hashtag);
+        const translationViews = toTranslationViews(_translations);
 
         // update visits using HyperLogLog for efficient UV estimation
         const enableVisit = await profileAsync(c, 'feed_detail_counter_flag', () => clientConfig.getOrDefault('counter.enabled', true));
@@ -302,7 +305,44 @@ export function FeedService(): Hono<{
             await profileAsync(c, 'feed_detail_visit_insert', () => db.insert(visits).values({ feedId: feed.id, ip: ip }));
         }
 
-        return c.json({ ...other, hashtags: hashtags_flatten, pv, uv });
+        return c.json({ ...other, hashtags: hashtags_flatten, translations: translationViews, pv, uv });
+    });
+
+    // GET /feed/:id/translation/:language - Get or queue a translation
+    app.get('/:id/translation/:language', async (c) => {
+        const db = c.get('db');
+        const cache = c.get('cache');
+        const serverConfig = c.get('serverConfig');
+        const env = c.get('env');
+        const id = c.req.param('id');
+        const language = c.req.param('language');
+
+        const id_num = parseFeedId(id);
+        const where = id_num === null ? eq(feeds.alias, id) : eq(feeds.id, id_num);
+        const feed = await profileAsync(c, 'feed_translation_lookup', () => db.query.feeds.findFirst({
+            where,
+            columns: { id: true },
+        }));
+
+        if (!feed) {
+            return c.text('Not found', 404);
+        }
+
+        const result = await profileAsync(c, 'feed_translation_ensure', () => ensureFeedTranslation(
+            db,
+            cache,
+            serverConfig,
+            env,
+            feed.id,
+            language,
+        ));
+
+        if (!result.ok) {
+            const status = result.error === 'Feed not found' ? 404 : 400;
+            return c.text(result.error, status);
+        }
+
+        return c.json(result.translation);
     });
 
     // GET /feed/adjacent/:id
@@ -434,6 +474,8 @@ export function FeedService(): Hono<{
             ai_summary: shouldQueueAISummary ? "" : undefined,
             ai_summary_status: isDraft ? "idle" : undefined,
             ai_summary_error: shouldQueueAISummary || isDraft ? "" : undefined,
+            // Stored translations describe the previous revision, so drop them on edit.
+            translations: contentChanged || title !== undefined ? resetTranslations() : undefined,
             alias,
             top,
             listed: listed ? 1 : 0,
@@ -549,7 +591,7 @@ export function SearchService(): Hono<{
                 pageIndex: page_num,
                 limit: limit_num,
             });
-            const data = pageResult.rows.map(({ content, hashtags, summary, ...other }: any) => {
+            const data = pageResult.rows.map(({ content, hashtags, summary, translations: _translations, ...other }: any) => {
                 const plainText = stripMarkdown(content);
                 return {
                     summary: summary.length > 0 ? summary : plainText.length > 100 ? plainText.slice(0, 100) : plainText,

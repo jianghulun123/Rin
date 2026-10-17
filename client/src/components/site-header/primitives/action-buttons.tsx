@@ -86,6 +86,8 @@ export function LanguageSwitch({ className, plain = false, popoverUp = false }: 
     { code: "zh-CN", name: "简体中文" },
     { code: "zh-TW", name: "繁體中文" },
     { code: "ja", name: "日本語" },
+    { code: "de", name: "Deutsch" },
+    { code: "ru", name: "Русский" },
   ];
 
   return (

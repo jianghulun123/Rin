@@ -14,6 +14,7 @@ export type SettingsDraft = {
 export type SettingsLoadState = {
   draft: SettingsDraft;
   hasStoredAiApiKey: boolean;
+  hasStoredTranslationApiKey: boolean;
 };
 
 export const AI_PROVIDER_PRESETS = [
@@ -56,9 +57,14 @@ export function normalizeSettingsState(
   const clientConfig = { ...(data?.clientConfig ?? {}) };
   const serverConfig = { ...(data?.serverConfig ?? {}) };
   const hasStoredAiApiKey = serverConfig["ai_summary.api_key"] === MASKED_SECRET;
+  const hasStoredTranslationApiKey = serverConfig["translation.api_key"] === MASKED_SECRET;
 
   if (hasStoredAiApiKey) {
     serverConfig["ai_summary.api_key"] = "";
+  }
+
+  if (hasStoredTranslationApiKey) {
+    serverConfig["translation.api_key"] = "";
   }
 
   return {
@@ -67,6 +73,7 @@ export function normalizeSettingsState(
       serverConfig,
     },
     hasStoredAiApiKey,
+    hasStoredTranslationApiKey,
   };
 }
 
@@ -196,6 +203,21 @@ export function buildAIConfigDraftValue(
     apiKey: String(serverConfig["ai_summary.api_key"] ?? ""),
     apiKeySet: hasStoredAiApiKey || String(serverConfig["ai_summary.api_key"] ?? "").trim().length > 0,
     apiUrl: String(serverConfig["ai_summary.api_url"] ?? ""),
+  };
+}
+
+export function buildTranslationConfigDraftValue(
+  draft: SettingsDraft,
+  hasStoredTranslationApiKey: boolean,
+) {
+  const serverConfig = draft.serverConfig;
+
+  return {
+    enabled: serverConfig["translation.enabled"] === true || serverConfig["translation.enabled"] === "true",
+    model: String(serverConfig["translation.model"] ?? "index-mt-9b"),
+    apiKey: String(serverConfig["translation.api_key"] ?? ""),
+    apiKeySet: hasStoredTranslationApiKey || String(serverConfig["translation.api_key"] ?? "").trim().length > 0,
+    apiUrl: String(serverConfig["translation.api_url"] ?? ""),
   };
 }
 

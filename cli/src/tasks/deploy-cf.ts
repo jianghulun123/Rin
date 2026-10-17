@@ -112,6 +112,7 @@ export function buildWranglerQueueConfig(taskQueueName: string, preview = false)
     queue = "${taskQueueName}"
     max_batch_size = 1
     max_batch_timeout = 5
+    max_concurrency = 1
   `);
 }
 

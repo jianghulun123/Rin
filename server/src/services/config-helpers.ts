@@ -2,9 +2,15 @@ import {
   AI_CONFIG_KEYS,
   CLIENT_CONFIG_ENV_DEFAULTS,
   SENSITIVE_SERVER_CONFIG_FIELDS,
+  TRANSLATION_CONFIG_KEYS,
   WEBHOOK_URL_KEY,
 } from "@rin/config";
-import { getFrontendAIEnabled, readAIConfigFromMap } from "../utils/db-config";
+import {
+  getFrontendAIEnabled,
+  getFrontendTranslationEnabled,
+  readAIConfigFromMap,
+  readTranslationConfigFromValues,
+} from "../utils/db-config";
 
 type ConfigMapLike = {
   all(): Promise<Map<string, unknown>>;
@@ -86,6 +92,13 @@ export function isAIConfigKey(key: string): boolean {
   return AI_CONFIG_KEYS.some((candidate) => candidate === key) || key.startsWith("ai_summary.");
 }
 
+export function isTranslationConfigKey(key: string): boolean {
+  return (
+    TRANSLATION_CONFIG_KEYS.some((candidate) => candidate === key) ||
+    key.startsWith("translation.")
+  );
+}
+
 function normalizeOptionalString(value: unknown) {
   if (typeof value !== "string") {
     return undefined;
@@ -149,16 +162,19 @@ export async function resolveWebhookConfig(
 export function splitConfigPayload(body: Record<string, unknown>) {
   const regularConfig: Record<string, unknown> = {};
   const aiConfigUpdates: Record<string, unknown> = {};
+  const translationConfigUpdates: Record<string, unknown> = {};
 
   for (const key in body) {
-    if (isAIConfigKey(key)) {
+    if (isTranslationConfigKey(key)) {
+      translationConfigUpdates[key.replace("translation.", "")] = body[key];
+    } else if (isAIConfigKey(key)) {
       aiConfigUpdates[key.replace("ai_summary.", "")] = body[key];
     } else {
       regularConfig[key] = body[key];
     }
   }
 
-  return { regularConfig, aiConfigUpdates };
+  return { regularConfig, aiConfigUpdates, translationConfigUpdates };
 }
 
 export async function persistRegularConfig(
@@ -204,6 +220,12 @@ export async function buildServerConfigResponse(
   const all = await serverConfig.all();
   const configObj = normalizeWebhookConfigResponse(Object.fromEntries(all));
   const aiConfig = readAIConfigFromMap(all);
+  const map = Object.fromEntries(all);
+  const translationConfig = readTranslationConfigFromValues(
+    Object.fromEntries(
+      TRANSLATION_CONFIG_KEYS.map((key) => [key, map[key]]),
+    ),
+  );
   const webhookUrlValue = configObj["webhook_url"] ?? configObj[WEBHOOK_URL_KEY] ?? env?.WEBHOOK_URL;
 
   if (webhookUrlValue !== undefined && webhookUrlValue !== "") {
@@ -220,6 +242,11 @@ export async function buildServerConfigResponse(
   configObj["ai_summary.api_url"] = aiConfig.api_url;
   configObj["ai_summary.api_key"] = aiConfig.api_key.length > 0 ? "••••••••" : "";
 
+  configObj["translation.enabled"] = String(translationConfig.enabled);
+  configObj["translation.model"] = translationConfig.model;
+  configObj["translation.api_url"] = translationConfig.api_url;
+  configObj["translation.api_key"] = translationConfig.api_key.length > 0 ? "••••••••" : "";
+
   return maskSensitiveFields(configObj);
 }
 
@@ -235,10 +262,14 @@ export async function buildClientConfigResponse(
   const aiEnabled = profile
     ? await profile("client_ai_enabled", () => getFrontendAIEnabled(serverConfig))
     : await getFrontendAIEnabled(serverConfig);
+  const translationEnabled = profile
+    ? await profile("client_translation_enabled", () => getFrontendTranslationEnabled(serverConfig))
+    : await getFrontendTranslationEnabled(serverConfig);
 
   return {
     ...clientConfigData,
     "ai_summary.enabled": aiEnabled,
+    "translation.enabled": translationEnabled,
   };
 }
 

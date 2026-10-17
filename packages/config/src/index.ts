@@ -1,4 +1,4 @@
-import type { AIConfig } from "@rin/api";
+import type { AIConfig, TranslationConfig } from "@rin/api";
 
 export const WEBHOOK_URL_KEY = "WEBHOOK_URL";
 
@@ -50,7 +50,19 @@ export const AI_CONFIG_KEYS = [
   `${AI_CONFIG_PREFIX}api_url`,
 ] as const;
 
-export const SENSITIVE_SERVER_CONFIG_FIELDS = [`${AI_CONFIG_PREFIX}api_key`] as const;
+export const TRANSLATION_CONFIG_PREFIX = "translation.";
+
+export const TRANSLATION_CONFIG_KEYS = [
+  `${TRANSLATION_CONFIG_PREFIX}enabled`,
+  `${TRANSLATION_CONFIG_PREFIX}model`,
+  `${TRANSLATION_CONFIG_PREFIX}api_key`,
+  `${TRANSLATION_CONFIG_PREFIX}api_url`,
+] as const;
+
+export const SENSITIVE_SERVER_CONFIG_FIELDS = [
+  `${AI_CONFIG_PREFIX}api_key`,
+  `${TRANSLATION_CONFIG_PREFIX}api_key`,
+] as const;
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
   enabled: false,
@@ -58,6 +70,17 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   model: "gpt-4o-mini",
   api_key: "",
   api_url: "https://api.openai.com/v1",
+};
+
+export const TRANSLATION_LANGUAGES = ["ja", "en", "zh-TW", "de", "ru"] as const;
+
+export type TranslationLanguage = (typeof TRANSLATION_LANGUAGES)[number];
+
+export const DEFAULT_TRANSLATION_CONFIG: TranslationConfig = {
+  enabled: false,
+  model: "index-mt-9b",
+  api_key: "",
+  api_url: "https://index-translate.bilibili.com/v1",
 };
 
 export class ConfigWrapper {

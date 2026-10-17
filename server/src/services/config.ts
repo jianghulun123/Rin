@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { wrapTime } from "hono/timing";
 import type { AppContext } from "../core/hono-types";
 import { adminOnly } from "../core/route-boundaries";
-import { setAIConfig, getAIConfig } from "../utils/db-config";
+import { setAIConfig, getAIConfig, setTranslationConfig } from "../utils/db-config";
 import { testAIModel } from "../utils/ai";
+import { testTranslationModel } from "../utils/translate";
 import { notify } from "../utils/webhook";
 import {
     buildCombinedConfigResponse,
@@ -61,6 +62,32 @@ export function ConfigService(): Hono {
 
         // Use unified test function
         const result = await wrapTime(c, 'ai_test', testAIModel(env, testConfig, testPrompt));
+        return c.json(result);
+    }, { format: 'json' }));
+
+    app.post('/test-translation', adminOnly(async (c: AppContext) => {
+        const serverConfig = c.get('serverConfig');
+        const body = await wrapTime(c, 'request_body', c.req.json()) as {
+            model?: string;
+            api_url?: string;
+            api_key?: string;
+            language?: string;
+            testPrompt?: string;
+        };
+
+        const overrides: Record<string, any> = {};
+        if (body.model !== undefined) overrides.model = body.model;
+        if (body.api_url !== undefined) overrides.api_url = body.api_url;
+        if (body.api_key !== undefined && body.api_key.trim()) overrides.api_key = body.api_key;
+
+        const language = body.language || 'ja';
+        const testPrompt = body.testPrompt?.trim() || "今天辛苦了！";
+
+        const result = await wrapTime(
+            c,
+            'translation_test',
+            testTranslationModel(serverConfig, overrides, testPrompt, language),
+        );
         return c.json(result);
     }, { format: 'json' }));
 
@@ -282,7 +309,7 @@ export function ConfigService(): Hono {
         const nextServerConfig = body.serverConfig ?? {};
 
         const { regularConfig: regularClientConfig } = splitConfigPayload(nextClientConfig);
-        const { regularConfig: regularServerConfig, aiConfigUpdates } = splitConfigPayload(nextServerConfig);
+        const { regularConfig: regularServerConfig, aiConfigUpdates, translationConfigUpdates } = splitConfigPayload(nextServerConfig);
 
         await Promise.all([
             persistRegularConfig(clientConfig, regularClientConfig),
@@ -291,6 +318,10 @@ export function ConfigService(): Hono {
 
         if (Object.keys(aiConfigUpdates).length > 0) {
             await setAIConfig(serverConfig, aiConfigUpdates);
+        }
+
+        if (Object.keys(translationConfigUpdates).length > 0) {
+            await setTranslationConfig(serverConfig, translationConfigUpdates);
         }
 
         return c.json(await buildCombinedConfigResponse(clientConfig, serverConfig, env));
@@ -307,13 +338,17 @@ export function ConfigService(): Hono {
         const serverConfig = c.get('serverConfig');
         const clientConfig = c.get('clientConfig');
         const body = await c.req.json();
-        const { regularConfig, aiConfigUpdates } = splitConfigPayload(body);
+        const { regularConfig, aiConfigUpdates, translationConfigUpdates } = splitConfigPayload(body);
         
         const config = type === 'server' ? serverConfig : clientConfig;
         await persistRegularConfig(config, regularConfig);
         
         if (Object.keys(aiConfigUpdates).length > 0) {
             await setAIConfig(serverConfig, aiConfigUpdates);
+        }
+
+        if (Object.keys(translationConfigUpdates).length > 0) {
+            await setTranslationConfig(serverConfig, translationConfigUpdates);
         }
         
         return c.text('OK');

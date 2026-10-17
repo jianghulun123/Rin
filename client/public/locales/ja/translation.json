@@ -514,7 +514,43 @@
     "wordpress": {
       "desc": "WordPressからエクスポートされたXMLファイルをアップロードする",
       "title": "WordPressからインポート"
-    }
+    },
+      "translation": {
+        "title": "記事翻訳",
+        "enable": {
+          "title": "記事翻訳を有効にする",
+          "desc": "読者の言語に合わせて本文を翻訳し、自動的に表示します。"
+        },
+        "model": {
+          "title": "翻訳モデル",
+          "options": {
+            "fast": "高速・軽量",
+            "balanced": "バランス（推奨）",
+            "quality": "高品質フラッグシップ"
+          }
+        },
+        "api_key": {
+          "title": "API キー",
+          "set": "設定済み",
+          "placeholder_set": "空欄のままにすると保存済みのキーを使用します",
+          "hint": "多くの翻訳エンドポイントは任意のダミー値を受け付けます。"
+        },
+        "api_url": {
+          "title": "API URL"
+        },
+        "test": {
+          "title": "翻訳をテスト",
+          "desc": "サンプル文を送信し、エンドポイント・モデル・キーを確認します。",
+          "button": "テスト",
+          "language": "翻訳先の言語",
+          "prompt": "テスト文",
+          "prompt_placeholder": "今日はお疲れさまでした！",
+          "success": "翻訳に成功しました",
+          "failed": "翻訳に失敗しました",
+          "error": "翻訳リクエストでエラーが発生しました",
+          "http_error$status": "HTTP ステータス：{{status}}"
+        }
+      }
   },
   "sitename": "サイト名",
   "sort_order": "ソート順",
@@ -747,5 +783,16 @@
   "sort_latest": "新着",
   "sort_popular": "人気",
   "total_tags": "全 {{count}} 個のタグ",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+    "article_translation": {
+      "label": "翻訳済み",
+      "show_original": "原文を表示",
+      "show_translation": "翻訳を表示",
+      "status": {
+        "failed": "翻訳に失敗しました",
+        "idle": "未翻訳",
+        "pending": "翻訳をキューに追加しました",
+        "processing": "翻訳中"
+      }
+    }
 }

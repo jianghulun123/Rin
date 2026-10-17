@@ -29,6 +29,8 @@ import type {
   ConfigType,
   ConfigResponse,
   AIConfig,
+  TranslationConfig,
+  FeedTranslation,
   UploadResponse,
   AuthStatus,
   LoginRequest,
@@ -319,6 +321,11 @@ class FeedAPI {
     return this.http.get<AdjacentFeedResponse>(`/api/feed/adjacent/${id}`);
   }
 
+  // GET /api/feed/:id/translation/:language
+  async translation(id: number | string, language: string): Promise<ApiResponse<FeedTranslation>> {
+    return this.http.get<FeedTranslation>(`/api/feed/${id}/translation/${language}`);
+  }
+
   // POST /api/feed/top/:id
   async setTop(id: number, top: number): Promise<ApiResponse<void>> {
     return this.http.post<void>(`/api/feed/top/${id}`, { top });
@@ -524,6 +531,17 @@ class ConfigAPI {
     testPrompt?: string;
   }): Promise<ApiResponse<{ success: boolean; response?: string; error?: string; details?: string; provider?: string; model?: string }>> {
     return this.http.post<any>("/api/config/test-ai", body);
+  }
+
+  // POST /api/config/test-translation - Test translation API configuration
+  async testTranslation(body: {
+    model?: string;
+    api_url?: string;
+    api_key?: string;
+    language?: string;
+    testPrompt?: string;
+  }): Promise<ApiResponse<{ success: boolean; response?: string; error?: string; details?: string }>> {
+    return this.http.post<any>("/api/config/test-translation", body);
   }
 
   async testWebhook(body: {

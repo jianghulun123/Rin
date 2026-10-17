@@ -524,7 +524,43 @@
     "wordpress": {
       "desc": "上传 WordPress 导出的 XML 文件",
       "title": "从 WordPress 导入"
-    }
+    },
+      "translation": {
+        "title": "文章翻译",
+        "enable": {
+          "title": "启用文章翻译",
+          "desc": "按读者语言翻译文章正文并自动展示。"
+        },
+        "model": {
+          "title": "翻译模型",
+          "options": {
+            "fast": "超快轻量",
+            "balanced": "均衡推荐",
+            "quality": "高质量旗舰"
+          }
+        },
+        "api_key": {
+          "title": "API Key",
+          "set": "已配置",
+          "placeholder_set": "留空则保留已保存的密钥",
+          "hint": "多数翻译接口接受任意占位字符。"
+        },
+        "api_url": {
+          "title": "API 地址"
+        },
+        "test": {
+          "title": "测试翻译",
+          "desc": "发送一句样例文本，验证接口、模型与密钥。",
+          "button": "测试",
+          "language": "目标语言",
+          "prompt": "测试文本",
+          "prompt_placeholder": "今天辛苦了！",
+          "success": "翻译成功",
+          "failed": "翻译失败",
+          "error": "翻译请求出错",
+          "http_error$status": "HTTP 状态：{{status}}"
+        }
+      }
   },
   "sitename": "站点名称",
   "sort_order": "排序",
@@ -757,5 +793,16 @@
   "sort_latest": "最新",
   "sort_popular": "热门",
   "total_tags": "共 {{count}} 个标签",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+    "article_translation": {
+      "label": "已翻译",
+      "show_original": "查看原文",
+      "show_translation": "查看译文",
+      "status": {
+        "failed": "翻译失败",
+        "idle": "未翻译",
+        "pending": "翻译已进入队列",
+        "processing": "翻译中"
+      }
+    }
 }

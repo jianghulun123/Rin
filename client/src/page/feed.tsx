@@ -1,4 +1,4 @@
-import type { Feed } from "@rin/api";
+import type { Feed, FeedTranslation } from "@rin/api";
 import { Modal } from "@rin/ui";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -21,6 +21,10 @@ import { Tips } from "../components/tips";
 import mermaid from "mermaid";
 import { AdjacentSection } from "../components/adjacent_feed.tsx";
 import { stripImageUrlMetadata } from "../utils/image-upload";
+import {
+  ARTICLE_TRANSLATION_LANGUAGE_LABELS,
+  resolveArticleTranslationLanguage,
+} from "../utils/article-translation";
 
 function extractFirstMarkdownImageUrl(content: string) {
   const match = /!\[.*?\]\((\S+?)(?:\s+"[^"]*")?\)/.exec(content);
@@ -31,8 +35,8 @@ function extractFirstMarkdownImageUrl(content: string) {
   return stripImageUrlMetadata(match[1]);
 }
 
-export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Element, clean: (id: string) => void }) {
-  const { t } = useTranslation();
+export function FeedPage({ id, TOC, clean, refreshTOC }: { id: string, TOC: () => JSX.Element, clean: (id: string) => void, refreshTOC: () => void }) {
+  const { t, i18n } = useTranslation();
   const siteConfig = useSiteConfig();
   const profile = useContext(ProfileContext);
   const [feed, setFeed] = useState<Feed>();
@@ -45,6 +49,21 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
   const [top, setTop] = useState<number>(0);
   const config = useContext(ClientConfigContext);
   const counterEnabled = config.getBoolean('counter.enabled');
+  const translationEnabled = config.getBoolean('translation.enabled');
+  const translationLanguage = resolveArticleTranslationLanguage(i18n.language);
+  const [translation, setTranslation] = useState<FeedTranslation>();
+  const [showOriginal, setShowOriginal] = useState(false);
+  const translationReady = translation?.status === "completed" && Boolean(translation.content.trim());
+  const translationPending = translation?.status === "pending" || translation?.status === "processing";
+  const translationActive = translationReady && !showOriginal;
+  const displayTitle = translationActive && translation!.title.trim() ? translation!.title : feed?.title;
+  const displayContent = translationActive ? translation!.content : feed?.content ?? "";
+  const translationNotice =
+    translation?.status === "failed"
+      ? t("article_translation.status.failed")
+      : translationPending
+        ? t(`article_translation.status.${translation!.status}`)
+        : null;
   const hasAISummary = Boolean(feed?.ai_summary?.trim());
   const showAISummaryState = feed?.ai_summary_status === "pending" || feed?.ai_summary_status === "processing" || feed?.ai_summary_status === "failed";
   const hashtags = Array.isArray(feed?.hashtags) ? feed.hashtags : [];
@@ -112,6 +131,44 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
       });
     ref.current = id;
   }, [id]);
+  useEffect(() => {
+    if (!feed || !translationEnabled || !translationLanguage) {
+      return;
+    }
+
+    let cancelled = false;
+    let pollTimer: number | undefined;
+    let attempts = 0;
+
+    const load = async () => {
+      const { data } = await client.feed.translation(id, translationLanguage);
+      if (cancelled || !data || typeof data === "string") return;
+
+      setTranslation(data as FeedTranslation);
+
+      if (data.status === "pending" || data.status === "processing") {
+        attempts += 1;
+        if (attempts < 40) {
+          pollTimer = window.setTimeout(load, 3000);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) window.clearTimeout(pollTimer);
+    };
+  }, [feed, id, translationEnabled, translationLanguage]);
+  useEffect(() => {
+    setTranslation(undefined);
+    setShowOriginal(false);
+  }, [id, translationLanguage]);
+  useEffect(() => {
+    if (!translationActive) return;
+    refreshTOC();
+  }, [translationActive, translation?.content, refreshTOC]);
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
@@ -182,8 +239,7 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
         )}
         {feed && !error && (
           <>
-            <div className="xl:w-64" />
-            <main className="wauto">
+            <main className="flex-1 min-w-0">
               <article
                 className="rounded-2xl bg-w m-2 px-6 py-4"
                 aria-label={feed.title ?? "Unnamed"}
@@ -224,7 +280,7 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
                     </p>}
                     <div className="flex flex-row items-center">
                       <h1 className="text-2xl font-bold t-primary break-all">
-                        {feed.title}
+                        {displayTitle}
                       </h1>
                       <div className="flex-1 w-0" />
                     </div>
@@ -257,6 +313,29 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
                     )}
                   </div>
                 </div>
+                {(translationReady || translationNotice) && (
+                  <div className="my-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-2.5 dark:border-sky-800/30 dark:bg-sky-900/20">
+                    <div className="flex items-center gap-2">
+                      <i className="ri-translate-2 text-sky-500" />
+                      <span className="text-sm font-medium text-sky-700 dark:text-sky-300">
+                        {translationNotice ?? t("article_translation.label")}
+                      </span>
+                      {translationReady && (
+                        <span className="text-xs text-sky-600/80 dark:text-sky-300/80">
+                          {ARTICLE_TRANSLATION_LANGUAGE_LABELS[translation!.language] ?? translation!.language}
+                        </span>
+                      )}
+                    </div>
+                    {translationReady && (
+                      <button
+                        onClick={() => setShowOriginal((current) => !current)}
+                        className="rounded-full px-3 py-1 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:text-sky-300 dark:hover:bg-sky-900/40"
+                      >
+                        {showOriginal ? t("article_translation.show_translation") : t("article_translation.show_original")}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {(hasAISummary || showAISummaryState) && (
                   <div className="my-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800/30">
                     <div className="flex items-center justify-between gap-2 mb-2">
@@ -282,7 +361,7 @@ export function FeedPage({ id, TOC, clean }: { id: string, TOC: () => JSX.Elemen
                     ) : null}
                   </div>
                 )}
-                <Markdown content={feed.content} />
+                <Markdown content={displayContent} />
                 <div className="mt-6 flex flex-col gap-2">
                   {hashtags.length > 0 && (
                     <div className="flex flex-row flex-wrap gap-x-2">

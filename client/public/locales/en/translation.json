@@ -524,7 +524,43 @@
     "wordpress": {
       "desc": "Upload the XML file exported from WordPress",
       "title": "Import from WordPress"
-    }
+    },
+      "translation": {
+        "title": "Article Translation",
+        "enable": {
+          "title": "Enable article translation",
+          "desc": "Translate article content into the reader's language and show it automatically."
+        },
+        "model": {
+          "title": "Translation model",
+          "options": {
+            "fast": "Fast & light",
+            "balanced": "Balanced (recommended)",
+            "quality": "High quality flagship"
+          }
+        },
+        "api_key": {
+          "title": "API key",
+          "set": "Configured",
+          "placeholder_set": "Leave blank to keep the saved key",
+          "hint": "Most translation endpoints accept any placeholder value."
+        },
+        "api_url": {
+          "title": "API URL"
+        },
+        "test": {
+          "title": "Test translation",
+          "desc": "Send a sample sentence to verify the endpoint, model and key.",
+          "button": "Test",
+          "language": "Target language",
+          "prompt": "Test sentence",
+          "prompt_placeholder": "Thanks for your hard work today!",
+          "success": "Translation succeeded",
+          "failed": "Translation failed",
+          "error": "Translation request error",
+          "http_error$status": "HTTP status: {{status}}"
+        }
+      }
   },
   "sitename": "Site Name",
   "sort_order": "Sort Order",
@@ -757,5 +793,16 @@
   "sort_latest": "Latest",
   "sort_popular": "Popular",
   "total_tags": "Total {{count}} tags",
-  "anonymous": "Anonymous"
+  "anonymous": "Anonymous",
+    "article_translation": {
+      "label": "Translated",
+      "show_original": "Show original",
+      "show_translation": "Show translation",
+      "status": {
+        "failed": "Translation failed",
+        "idle": "Not translated",
+        "pending": "Translation queued",
+        "processing": "Translating"
+      }
+    }
 }
