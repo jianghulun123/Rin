@@ -214,7 +214,8 @@ export function buildTranslationConfigDraftValue(
 
   return {
     enabled: serverConfig["translation.enabled"] === true || serverConfig["translation.enabled"] === "true",
-    model: String(serverConfig["translation.model"] ?? "index-mt-9b"),
+    provider: String(serverConfig["translation.provider"] ?? "openai"),
+    model: String(serverConfig["translation.model"] ?? "gpt-4o-mini"),
     apiKey: String(serverConfig["translation.api_key"] ?? ""),
     apiKeySet: hasStoredTranslationApiKey || String(serverConfig["translation.api_key"] ?? "").trim().length > 0,
     apiUrl: String(serverConfig["translation.api_url"] ?? ""),

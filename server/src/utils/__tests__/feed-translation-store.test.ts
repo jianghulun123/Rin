@@ -2,39 +2,37 @@ import { describe, expect, it } from "bun:test";
 import { parseTranslations, updateTranslationEntry } from "../feed-translation-store";
 
 describe("parseTranslations", () => {
-    it("keeps a stored risk control reason", () => {
+    it("keeps stored entries and drops unknown fields", () => {
         const raw = JSON.stringify({
-            en: { status: "failed", error: "412", failure_reason: "risk_control" },
+            en: { status: "failed", error: "boom", failure_reason: "anything" },
         });
 
-        expect(parseTranslations(raw).en.failure_reason).toBe("risk_control");
-    });
-
-    it("drops unknown failure reasons", () => {
-        const raw = JSON.stringify({
-            en: { status: "failed", error: "boom", failure_reason: "something_else" },
+        expect(parseTranslations(raw).en).toEqual({
+            language: "en",
+            status: "failed",
+            title: "",
+            content: "",
+            error: "boom",
         });
-
-        expect(parseTranslations(raw).en.failure_reason).toBeUndefined();
     });
 });
 
 describe("updateTranslationEntry", () => {
-    it("stores the reason together with a failure", () => {
+    it("stores a failed entry with its error", () => {
         const raw = updateTranslationEntry("{}", "en", {
             status: "failed",
-            error: "412",
-            failure_reason: "risk_control",
+            error: "boom",
         });
 
-        expect(parseTranslations(raw).en.failure_reason).toBe("risk_control");
+        const entry = parseTranslations(raw).en;
+        expect(entry.status).toBe("failed");
+        expect(entry.error).toBe("boom");
     });
 
-    it("clears the reason once the entry is no longer failed", () => {
+    it("clears the error once the entry completes", () => {
         const failed = updateTranslationEntry("{}", "en", {
             status: "failed",
-            error: "412",
-            failure_reason: "risk_control",
+            error: "boom",
         });
 
         const completed = updateTranslationEntry(failed, "en", {
@@ -52,31 +50,16 @@ describe("updateTranslationEntry", () => {
         });
     });
 
-    it("does not resurrect a stale reason on a later failure without one", () => {
-        const failed = updateTranslationEntry("{}", "en", {
-            status: "failed",
-            error: "412",
-            failure_reason: "risk_control",
-        });
-
-        const queueFailure = updateTranslationEntry(failed, "en", {
-            status: "failed",
-            error: "queue unavailable",
-        });
-
-        expect(parseTranslations(queueFailure).en.failure_reason).toBeUndefined();
-    });
-
     it("leaves other languages untouched", () => {
         const raw = updateTranslationEntry(
             updateTranslationEntry("{}", "en", { status: "completed", content: "A" }),
             "ja",
-            { status: "failed", error: "412", failure_reason: "risk_control" },
+            { status: "failed", error: "boom" },
         );
 
         const parsed = parseTranslations(raw);
         expect(parsed.en.status).toBe("completed");
-        expect(parsed.ja.failure_reason).toBe("risk_control");
+        expect(parsed.ja.status).toBe("failed");
     });
 
     it("stores a translated title alongside the body", () => {

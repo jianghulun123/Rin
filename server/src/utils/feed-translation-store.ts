@@ -24,10 +24,6 @@ export function parseTranslations(raw: unknown): Record<string, FeedTranslation>
                 content: typeof value.content === "string" ? value.content : "",
                 error: typeof value.error === "string" ? value.error : "",
             };
-
-            if (value.failure_reason === "risk_control") {
-                result[language].failure_reason = "risk_control";
-            }
         }
 
         return result;
@@ -59,23 +55,14 @@ export function updateTranslationEntry(
 ): string {
     const translations = parseTranslations(raw);
     const current = translations[language];
-    const status = updates.status ?? current?.status ?? "idle";
-    // A failure reason only ever describes a failed entry, and it must be set explicitly
-    // by the caller: inheriting it would let a stale risk-control marker outlive the
-    // failure (e.g. a later queue error on the same language).
-    const failureReason = status === "failed" ? updates.failure_reason : undefined;
 
     translations[language] = {
         language,
-        status,
+        status: updates.status ?? current?.status ?? "idle",
         title: updates.title ?? current?.title ?? "",
         content: updates.content ?? current?.content ?? "",
         error: updates.error ?? current?.error ?? "",
     };
-
-    if (failureReason) {
-        translations[language].failure_reason = failureReason;
-    }
 
     return serializeTranslations(translations);
 }

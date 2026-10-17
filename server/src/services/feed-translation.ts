@@ -186,6 +186,7 @@ export async function processFeedTranslationTask(
     })
     .where(eq(feeds.id, feed.id));
   const result = await generateFeedTranslation(
+    env,
     serverConfig,
     { title: feed.title, content: feed.content },
     payload.language,
@@ -205,7 +206,7 @@ export async function processFeedTranslationTask(
         payload.language,
         result.ok
           ? { status: "completed", title: result.title, content: result.content, error: "" }
-          : { status: "failed", error: result.error, failure_reason: result.failureReason },
+          : { status: "failed", error: result.error },
       ),
     })
     .where(eq(feeds.id, feed.id));

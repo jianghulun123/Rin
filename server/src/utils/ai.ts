@@ -86,13 +86,28 @@ function extractAIText(response: unknown): string | null {
     return null;
 }
 
+export type AIChatMessage = { role: "system" | "user" | "assistant"; content: string };
+
+export type AIChatOptions = {
+    maxTokens?: number;
+    temperature?: number;
+};
+
+export type AIChatConfig = {
+    provider: string;
+    model: string;
+    api_key: string;
+    api_url: string;
+};
+
 /**
  * Execute Worker AI request
  */
 async function executeWorkerAI(
     env: Env,
     modelId: string,
-    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>
+    messages: AIChatMessage[],
+    options: AIChatOptions = {},
 ): Promise<string | null> {
     if (!env.AI || typeof env.AI.run !== "function") {
         throw new Error("Workers AI binding is not configured");
@@ -100,7 +115,9 @@ async function executeWorkerAI(
 
     // Worker AI uses messages format for chat models
     const response = await env.AI.run(modelId as any, {
-        messages
+        messages,
+        ...(options.maxTokens ? { max_tokens: options.maxTokens } : {}),
+        ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
     } as any);
 
     return extractAIText(response);
@@ -110,13 +127,9 @@ async function executeWorkerAI(
  * Execute external AI API request
  */
 async function executeExternalAI(
-    config: {
-        provider: string;
-        model: string;
-        api_key: string;
-        api_url: string;
-    },
-    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>
+    config: AIChatConfig,
+    messages: AIChatMessage[],
+    options: AIChatOptions = {},
 ): Promise<string | null> {
     const { provider, model, api_key, api_url } = config;
 
@@ -135,8 +148,8 @@ async function executeExternalAI(
         body: JSON.stringify({
             model: model,
             messages,
-            max_tokens: 500,
-            temperature: 0.3,
+            max_tokens: options.maxTokens ?? 500,
+            temperature: options.temperature ?? 0.3,
         }),
     });
 
@@ -147,6 +160,23 @@ async function executeExternalAI(
 
     const data = await response.json() as any;
     return data.choices?.[0]?.message?.content?.trim() || null;
+}
+
+/**
+ * Runs a chat completion on whichever provider the config names. Shared by AI
+ * summary and article translation so both honour one provider contract.
+ */
+export async function runAIChat(
+    env: Env,
+    config: AIChatConfig,
+    messages: AIChatMessage[],
+    options: AIChatOptions = {},
+): Promise<string | null> {
+    if (config.provider === "worker-ai") {
+        return executeWorkerAI(env, getWorkerAIModelId(config.model), messages, options);
+    }
+
+    return executeExternalAI(config, messages, options);
 }
 
 /**

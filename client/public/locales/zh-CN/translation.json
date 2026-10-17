@@ -531,19 +531,17 @@
           "title": "启用文章翻译",
           "desc": "按读者语言翻译文章正文并自动展示。"
         },
+        "provider": {
+          "title": "提供方",
+          "desc": "用于翻译的 AI 服务。"
+        },
         "model": {
-          "title": "翻译模型",
-          "options": {
-            "fast": "超快轻量",
-            "balanced": "均衡推荐",
-            "quality": "高质量旗舰"
-          }
+          "title": "翻译模型"
         },
         "api_key": {
           "title": "API Key",
           "set": "已配置",
-          "placeholder_set": "留空则保留已保存的密钥",
-          "hint": "多数翻译接口接受任意占位字符。"
+          "placeholder_set": "留空则保留已保存的密钥"
         },
         "api_url": {
           "title": "API 地址"

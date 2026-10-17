@@ -1,39 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import {
-    buildTranslationChatCompletionsUrl,
-    buildTranslationPrompt,
-    extractTranslationContent,
-    normalizeTranslationBaseUrl,
+    buildTranslationSystemPrompt,
     splitTranslationChunks,
     stripReasoningTags,
 } from "../translation";
 
-describe("normalizeTranslationBaseUrl", () => {
-    it("removes trailing slashes and the chat completions suffix", () => {
-        expect(normalizeTranslationBaseUrl("https://example.com/v1/")).toBe("https://example.com/v1");
-        expect(normalizeTranslationBaseUrl("https://example.com/v1/chat/completions")).toBe("https://example.com/v1");
-    });
-});
-
-describe("buildTranslationChatCompletionsUrl", () => {
-    it("builds the endpoint from a base URL", () => {
-        expect(buildTranslationChatCompletionsUrl("https://example.com/v1")).toBe(
-            "https://example.com/v1/chat/completions",
-        );
-    });
-
-    it("throws when no URL is configured", () => {
-        expect(() => buildTranslationChatCompletionsUrl("   ")).toThrow("Translation API URL not configured");
-    });
-});
-
-describe("buildTranslationPrompt", () => {
+describe("buildTranslationSystemPrompt", () => {
     it("names the target language in Chinese", () => {
-        expect(buildTranslationPrompt("hello", "en")).toBe("把这段话翻译成英语：hello");
+        const prompt = buildTranslationSystemPrompt("en");
+        expect(prompt).toContain("英语");
+        expect(prompt).toContain("只输出译文");
     });
 
     it("falls back to the raw code for unmapped languages", () => {
-        expect(buildTranslationPrompt("hello", "ko")).toBe("把这段话翻译成ko：hello");
+        expect(buildTranslationSystemPrompt("ko")).toContain("ko");
     });
 });
 
@@ -65,23 +45,5 @@ describe("stripReasoningTags", () => {
         expect(stripReasoningTags("<think>secret</think>answer")).toBe("answer");
         expect(stripReasoningTags("answer<thinking>dangling")).toBe("answer");
         expect(stripReasoningTags("")).toBe("");
-    });
-});
-
-describe("extractTranslationContent", () => {
-    it("reads the first choice content", () => {
-        expect(
-            extractTranslationContent({ choices: [{ message: { content: "译文" } }] }),
-        ).toBe("译文");
-    });
-
-    it("strips reasoning tags around the answer", () => {
-        expect(
-            extractTranslationContent({ choices: [{ message: { content: "<think>x</think>译文" } }] }),
-        ).toBe("译文");
-    });
-
-    it("throws on an empty completion", () => {
-        expect(() => extractTranslationContent({ choices: [] })).toThrow("Empty response from translation API");
     });
 });

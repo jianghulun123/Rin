@@ -531,19 +531,17 @@
           "title": "Enable article translation",
           "desc": "Translate article content into the reader's language and show it automatically."
         },
+        "provider": {
+          "title": "Provider",
+          "desc": "AI service used for translation."
+        },
         "model": {
-          "title": "Translation model",
-          "options": {
-            "fast": "Fast & light",
-            "balanced": "Balanced (recommended)",
-            "quality": "High quality flagship"
-          }
+          "title": "Translation model"
         },
         "api_key": {
           "title": "API key",
           "set": "Configured",
-          "placeholder_set": "Leave blank to keep the saved key",
-          "hint": "Most translation endpoints accept any placeholder value."
+          "placeholder_set": "Leave blank to keep the saved key"
         },
         "api_url": {
           "title": "API URL"

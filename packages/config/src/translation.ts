@@ -1,16 +1,7 @@
-import type { FeedTranslationFailureReason } from "@rin/api";
-
-/**
- * Machine-readable marker for "the upstream risk control rejected us". The server
- * stores it with the failed translation so the client can retry in the browser
- * without parsing human-readable error text.
- */
-export const TRANSLATION_RISK_CONTROL_REASON: FeedTranslationFailureReason = "risk_control";
-
 const CHUNK_MAX_LENGTH = 1800;
 
-// Prompt names are kept in Chinese on purpose: the upstream MT model is tuned
-// for Chinese instructions, matching the provider's own usage sample.
+// Prompt names are kept in Chinese on purpose: the instructions are written in
+// Chinese, and the translation models are asked to answer in the target language.
 const PROMPT_LANGUAGE_NAMES: Record<string, string> = {
   ja: "日语",
   en: "英语",
@@ -19,26 +10,16 @@ const PROMPT_LANGUAGE_NAMES: Record<string, string> = {
   ru: "俄语",
 };
 
-export function normalizeTranslationBaseUrl(apiUrl: string): string {
-  return apiUrl
-    .trim()
-    .replace(/\/+$/g, "")
-    .replace(/\/chat\/completions$/i, "");
+export function translationLanguageName(language: string): string {
+  return PROMPT_LANGUAGE_NAMES[language] ?? language;
 }
 
-export function buildTranslationChatCompletionsUrl(apiUrl: string): string {
-  const normalizedBaseUrl = normalizeTranslationBaseUrl(apiUrl);
-
-  if (!normalizedBaseUrl) {
-    throw new Error("Translation API URL not configured");
-  }
-
-  return `${normalizedBaseUrl}/chat/completions`;
-}
-
-export function buildTranslationPrompt(text: string, language: string): string {
-  const languageName = PROMPT_LANGUAGE_NAMES[language] ?? language;
-  return `把这段话翻译成${languageName}：${text}`;
+/**
+ * Instruction sent as the system message. Every provider receives the same text,
+ * so the model is told to answer with the translation alone.
+ */
+export function buildTranslationSystemPrompt(language: string): string {
+  return `你是专业翻译引擎。把用户提供的文本翻译成${translationLanguageName(language)}，只输出译文，不要解释、不要加引号或注释，并保留原文的 Markdown 结构。`;
 }
 
 export function splitTranslationChunks(content: string): string[] {
@@ -84,17 +65,4 @@ export function stripReasoningTags(text: string): string {
   out = out.replace(/<reasoning(?:\s[^>]*)?>[\s\S]*$/gi, "");
 
   return out.trim();
-}
-
-/** Reads an OpenAI-compatible chat completion body down to the translated text. */
-export function extractTranslationContent(payload: unknown): string {
-  const choices = (payload as { choices?: Array<{ message?: { content?: string } }> } | null)
-    ?.choices;
-  const translated = stripReasoningTags(choices?.[0]?.message?.content ?? "");
-
-  if (!translated) {
-    throw new Error("Empty response from translation API");
-  }
-
-  return translated;
 }

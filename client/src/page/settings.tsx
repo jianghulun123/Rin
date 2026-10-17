@@ -665,6 +665,9 @@ export function Settings() {
               if (updates.enabled !== undefined) {
                 setConfigValue("server", "translation.enabled", updates.enabled);
               }
+              if (updates.provider !== undefined) {
+                setConfigValue("server", "translation.provider", updates.provider);
+              }
               if (updates.model !== undefined) {
                 setConfigValue("server", "translation.model", updates.model);
               }

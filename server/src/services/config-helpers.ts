@@ -8,7 +8,6 @@ import {
 import {
   getFrontendAIEnabled,
   getFrontendTranslationEnabled,
-  getTranslationConfig,
   readAIConfigFromMap,
   readTranslationConfigFromValues,
 } from "../utils/db-config";
@@ -244,6 +243,7 @@ export async function buildServerConfigResponse(
   configObj["ai_summary.api_key"] = aiConfig.api_key.length > 0 ? "••••••••" : "";
 
   configObj["translation.enabled"] = String(translationConfig.enabled);
+  configObj["translation.provider"] = translationConfig.provider;
   configObj["translation.model"] = translationConfig.model;
   configObj["translation.api_url"] = translationConfig.api_url;
   configObj["translation.api_key"] = translationConfig.api_key.length > 0 ? "••••••••" : "";
@@ -266,21 +266,11 @@ export async function buildClientConfigResponse(
   const translationEnabled = profile
     ? await profile("client_translation_enabled", () => getFrontendTranslationEnabled(serverConfig))
     : await getFrontendTranslationEnabled(serverConfig);
-  const translationConfig = profile
-    ? await profile("client_translation_config", () => getTranslationConfig(serverConfig))
-    : await getTranslationConfig(serverConfig);
-
-  // The browser may only retry a translation itself when the endpoint needs no
-  // credentials: anything else would ship the API key to every visitor.
-  const browserFallbackEnabled = translationEnabled && translationConfig.api_key.trim() === "";
 
   return {
     ...clientConfigData,
     "ai_summary.enabled": aiEnabled,
     "translation.enabled": translationEnabled,
-    "translation.browser_fallback": browserFallbackEnabled,
-    "translation.browser_fallback_api_url": browserFallbackEnabled ? translationConfig.api_url : "",
-    "translation.browser_fallback_model": browserFallbackEnabled ? translationConfig.model : "",
   };
 }
 

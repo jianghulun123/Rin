@@ -289,6 +289,7 @@ export interface AIConfig {
 
 export interface TranslationConfig {
   enabled: boolean;
+  provider: string;
   model: string;
   api_key: string;
   api_url: string;
@@ -296,20 +297,12 @@ export interface TranslationConfig {
 
 export type FeedTranslationStatus = "idle" | "pending" | "processing" | "completed" | "failed";
 
-/**
- * Why a translation failed, when the cause is actionable for the client. Only
- * `risk_control` is set today: the upstream blocked the server's request, so the
- * browser may retry it against a keyless endpoint.
- */
-export type FeedTranslationFailureReason = "risk_control";
-
 export interface FeedTranslation {
   language: string;
   status: FeedTranslationStatus;
   title: string;
   content: string;
   error: string;
-  failure_reason?: FeedTranslationFailureReason;
 }
 
 // ============================================================================

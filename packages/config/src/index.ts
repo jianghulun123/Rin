@@ -18,9 +18,6 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "site.description": "A lightweight personal blogging system",
     "site.avatar": "",
     "site.page_size": 5,
-    "translation.browser_fallback": false,
-    "translation.browser_fallback_api_url": "",
-    "translation.browser_fallback_model": "",
   }),
 );
 
@@ -59,6 +56,7 @@ export * from "./translation";
 
 export const TRANSLATION_CONFIG_KEYS = [
   `${TRANSLATION_CONFIG_PREFIX}enabled`,
+  `${TRANSLATION_CONFIG_PREFIX}provider`,
   `${TRANSLATION_CONFIG_PREFIX}model`,
   `${TRANSLATION_CONFIG_PREFIX}api_key`,
   `${TRANSLATION_CONFIG_PREFIX}api_url`,
@@ -83,9 +81,10 @@ export type TranslationLanguage = (typeof TRANSLATION_LANGUAGES)[number];
 
 export const DEFAULT_TRANSLATION_CONFIG: TranslationConfig = {
   enabled: false,
-  model: "index-mt-9b",
+  provider: "openai",
+  model: "gpt-4o-mini",
   api_key: "",
-  api_url: "https://index-translate.bilibili.com/v1",
+  api_url: "https://api.openai.com/v1",
 };
 
 export class ConfigWrapper {

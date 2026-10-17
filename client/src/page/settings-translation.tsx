@@ -13,20 +13,21 @@ import ReactLoading from "react-loading";
 import { client } from "../app/runtime";
 import { Button } from "../components/button";
 import { ItemTitle } from "./settings-items";
+import {
+  AI_MODEL_PRESETS,
+  AI_PROVIDER_PRESETS,
+  getAIProviderFields,
+  getAIProviderPreset,
+} from "./settings-helpers";
 
 export type TranslationSettingsValue = {
   enabled: boolean;
+  provider: string;
   model: string;
   apiKey: string;
   apiKeySet: boolean;
   apiUrl: string;
 };
-
-export const TRANSLATION_MODEL_PRESETS = [
-  { value: "index-mt-2b", labelKey: "settings.translation.model.options.fast" },
-  { value: "index-mt-9b", labelKey: "settings.translation.model.options.balanced" },
-  { value: "index-mt-35b", labelKey: "settings.translation.model.options.quality" },
-] as const;
 
 export const TRANSLATION_LANGUAGE_PRESETS = [
   { value: "ja", label: "日本語" },
@@ -35,8 +36,6 @@ export const TRANSLATION_LANGUAGE_PRESETS = [
   { value: "de", label: "Deutsch" },
   { value: "ru", label: "Русский" },
 ] as const;
-
-export const DEFAULT_TRANSLATION_API_URL = "https://index-translate.bilibili.com/v1";
 
 export function TranslationSettings({
   value,
@@ -50,12 +49,25 @@ export function TranslationSettings({
   const [testResult, setTestResult] = useState<{ success?: boolean; response?: string; error?: string; details?: string } | null>(null);
   const [testLanguage, setTestLanguage] = useState<string>("ja");
   const [testPrompt, setTestPrompt] = useState("");
+  const providerFields = getAIProviderFields(value.provider);
+
+  const handleProviderChange = (nextProvider: string) => {
+    const preset = getAIProviderPreset(nextProvider);
+    const models = AI_MODEL_PRESETS[nextProvider] || [];
+
+    onChange({
+      provider: nextProvider,
+      apiUrl: preset?.url ?? "",
+      model: models[0] ?? value.model,
+    });
+  };
 
   const handleTest = async () => {
     setTestStatus("testing");
     setTestResult(null);
     try {
       const { data, error } = await client.config.testTranslation({
+        provider: value.provider,
         model: value.model,
         api_url: value.apiUrl,
         api_key: value.apiKey,
@@ -91,6 +103,8 @@ export function TranslationSettings({
     }
   };
 
+  const modelOptions = AI_MODEL_PRESETS[value.provider] || [];
+
   return (
     <>
       <ItemTitle title={t("settings.translation.title")} />
@@ -114,6 +128,21 @@ export function TranslationSettings({
       {value.enabled && (
         <>
           <SettingsCard>
+            <SettingsCardRow
+              header={<SettingsCardHeader title={t("settings.translation.provider.title")} description={t("settings.translation.provider.desc")} />}
+              action={
+                <SearchableSelect
+                  value={value.provider}
+                  onChange={handleProviderChange}
+                  options={AI_PROVIDER_PRESETS.map((preset) => ({
+                    label: preset.label,
+                    value: preset.value,
+                  }))}
+                  placeholder={t("settings.translation.provider.title")}
+                  searchable={false}
+                />
+              }
+            />
             <SettingsCardBody>
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
@@ -123,53 +152,57 @@ export function TranslationSettings({
                     onChange={(nextValue) => {
                       onChange({ model: nextValue });
                     }}
-                    options={TRANSLATION_MODEL_PRESETS.map((preset) => ({
-                      label: `${t(preset.labelKey)} (${preset.value})`,
-                      value: preset.value,
+                    options={modelOptions.map((option) => ({
+                      label: option,
+                      value: option,
                     }))}
                     placeholder={t("settings.translation.model.title")}
-                    searchable={false}
+                    searchPlaceholder={t("settings.translation.model.title")}
+                    emptyLabel={t("no_more")}
+                    allowCustomValue
+                    customValueLabel={(nextValue) => `${t("update.title")}: ${nextValue}`}
                   />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium t-primary">
-                    {t("settings.translation.api_key.title")}
-                    {value.apiKeySet && (
-                      <span className="ml-2">
-                        <SettingsBadge tone="success">{t("settings.translation.api_key.set")}</SettingsBadge>
-                      </span>
-                    )}
-                  </p>
-                  <input
-                    type="password"
-                    name="rin-translation-api-key"
-                    autoComplete="new-password"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    value={value.apiKey}
-                    onChange={(event) => {
-                      onChange({ apiKey: event.target.value });
-                    }}
-                    placeholder={value.apiKeySet ? t("settings.translation.api_key.placeholder_set") : "empty"}
-                    className="w-full rounded-xl border border-black/10 bg-w px-4 py-3 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
-                  />
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {t("settings.translation.api_key.hint")}
-                  </p>
-                </div>
-                <div className="space-y-2 lg:col-span-2">
-                  <p className="text-sm font-medium t-primary">{t("settings.translation.api_url.title")}</p>
-                  <input
-                    type="text"
-                    value={value.apiUrl}
-                    onChange={(event) => {
-                      onChange({ apiUrl: event.target.value });
-                    }}
-                    placeholder={DEFAULT_TRANSLATION_API_URL}
-                    className="w-full rounded-xl border border-black/10 bg-w px-4 py-3 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
-                  />
-                </div>
+                {providerFields.requiresApiKey ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium t-primary">
+                      {t("settings.translation.api_key.title")}
+                      {value.apiKeySet && (
+                        <span className="ml-2">
+                          <SettingsBadge tone="success">{t("settings.translation.api_key.set")}</SettingsBadge>
+                        </span>
+                      )}
+                    </p>
+                    <input
+                      type="password"
+                      name="rin-translation-api-key"
+                      autoComplete="new-password"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      value={value.apiKey}
+                      onChange={(event) => {
+                        onChange({ apiKey: event.target.value });
+                      }}
+                      placeholder={value.apiKeySet ? t("settings.translation.api_key.placeholder_set") : "sk-..."}
+                      className="w-full rounded-xl border border-black/10 bg-w px-4 py-3 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
+                    />
+                  </div>
+                ) : null}
+                {providerFields.requiresApiUrl ? (
+                  <div className="space-y-2 lg:col-span-2">
+                    <p className="text-sm font-medium t-primary">{t("settings.translation.api_url.title")}</p>
+                    <input
+                      type="text"
+                      value={value.apiUrl}
+                      onChange={(event) => {
+                        onChange({ apiUrl: event.target.value });
+                      }}
+                      placeholder="https://api.openai.com/v1"
+                      className="w-full rounded-xl border border-black/10 bg-w px-4 py-3 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
+                    />
+                  </div>
+                ) : null}
               </div>
             </SettingsCardBody>
           </SettingsCard>

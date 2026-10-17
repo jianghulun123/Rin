@@ -534,6 +534,7 @@ class ConfigAPI {
 
   // POST /api/config/test-translation - Test translation API configuration
   async testTranslation(body: {
+    provider?: string;
     model?: string;
     api_url?: string;
     api_key?: string;

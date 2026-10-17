@@ -531,19 +531,17 @@
           "title": "啟用文章翻譯",
           "desc": "依讀者語言翻譯文章正文並自動顯示。"
         },
+        "provider": {
+          "title": "提供方",
+          "desc": "用於翻譯的 AI 服務。"
+        },
         "model": {
-          "title": "翻譯模型",
-          "options": {
-            "fast": "超快輕量",
-            "balanced": "均衡推薦",
-            "quality": "高品質旗艦"
-          }
+          "title": "翻譯模型"
         },
         "api_key": {
           "title": "API Key",
           "set": "已設定",
-          "placeholder_set": "留空則保留已儲存的金鑰",
-          "hint": "多數翻譯介面接受任意佔位字元。"
+          "placeholder_set": "留空則保留已儲存的金鑰"
         },
         "api_url": {
           "title": "API 位址"

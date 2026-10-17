@@ -521,19 +521,17 @@
           "title": "記事翻訳を有効にする",
           "desc": "読者の言語に合わせて本文を翻訳し、自動的に表示します。"
         },
+        "provider": {
+          "title": "提供元",
+          "desc": "翻訳に使用する AI サービス。"
+        },
         "model": {
-          "title": "翻訳モデル",
-          "options": {
-            "fast": "高速・軽量",
-            "balanced": "バランス（推奨）",
-            "quality": "高品質フラッグシップ"
-          }
+          "title": "翻訳モデル"
         },
         "api_key": {
           "title": "API キー",
           "set": "設定済み",
-          "placeholder_set": "空欄のままにすると保存済みのキーを使用します",
-          "hint": "多くの翻訳エンドポイントは任意のダミー値を受け付けます。"
+          "placeholder_set": "空欄のままにすると保存済みのキーを使用します"
         },
         "api_url": {
           "title": "API URL"

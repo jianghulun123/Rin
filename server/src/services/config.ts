@@ -66,8 +66,10 @@ export function ConfigService(): Hono {
     }, { format: 'json' }));
 
     app.post('/test-translation', adminOnly(async (c: AppContext) => {
+        const env = c.get('env');
         const serverConfig = c.get('serverConfig');
         const body = await wrapTime(c, 'request_body', c.req.json()) as {
+            provider?: string;
             model?: string;
             api_url?: string;
             api_key?: string;
@@ -76,6 +78,7 @@ export function ConfigService(): Hono {
         };
 
         const overrides: Record<string, any> = {};
+        if (body.provider !== undefined) overrides.provider = body.provider;
         if (body.model !== undefined) overrides.model = body.model;
         if (body.api_url !== undefined) overrides.api_url = body.api_url;
         if (body.api_key !== undefined && body.api_key.trim()) overrides.api_key = body.api_key;
@@ -86,7 +89,7 @@ export function ConfigService(): Hono {
         const result = await wrapTime(
             c,
             'translation_test',
-            testTranslationModel(serverConfig, overrides, testPrompt, language),
+            testTranslationModel(env, serverConfig, overrides, testPrompt, language),
         );
         return c.json(result);
     }, { format: 'json' }));

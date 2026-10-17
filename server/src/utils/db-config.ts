@@ -95,7 +95,7 @@ export async function getAIConfigForFrontend(
     };
 }
 
-const TRANSLATION_CONFIG_FIELDS = ["enabled", "model", "api_key", "api_url"] as const;
+const TRANSLATION_CONFIG_FIELDS = ["enabled", "provider", "model", "api_key", "api_url"] as const;
 
 export function readTranslationConfigFromValues(values: Record<string, unknown>): TranslationConfig {
     const config: TranslationConfig = { ...DEFAULT_TRANSLATION_CONFIG };
@@ -103,6 +103,11 @@ export function readTranslationConfigFromValues(values: Record<string, unknown>)
     const enabled = values[TRANSLATION_CONFIG_PREFIX + "enabled"];
     if (enabled != null) {
         config.enabled = enabled === true || enabled === "true";
+    }
+
+    const provider = values[TRANSLATION_CONFIG_PREFIX + "provider"];
+    if (typeof provider === "string" && provider.trim()) {
+        config.provider = provider.trim();
     }
 
     const model = values[TRANSLATION_CONFIG_PREFIX + "model"];
