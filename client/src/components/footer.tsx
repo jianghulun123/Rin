@@ -6,6 +6,7 @@ import { Helmet } from "react-helmet";
 import { siteName } from '../utils/constants';
 import { useTranslation } from "react-i18next";
 import { buildLoginPath, HIDDEN_LOGIN_REDIRECT } from "../utils/auth-redirect";
+import { Padding } from "./padding";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 function Footer() {
@@ -91,54 +92,74 @@ function Footer() {
             </Helmet>
             <div className="flex flex-col mb-8 space-y-2 justify-center items-center t-primary ani-show">
                 <div ref={footerHtmlRef} />
-                <p className='text-sm text-neutral-500 font-normal link-line'>
-                    <span onDoubleClick={() => {
-                        if(doubleClickTimes >= 2){ // actually need 3 times doubleClick
-                            setDoubleClickTimes(0)
-                            if(!loginEnabled) {
-                                setLocation(buildLoginPath(HIDDEN_LOGIN_REDIRECT))
-                            }
-                        } else {
-                            setDoubleClickTimes(doubleClickTimes + 1)
-                        }
-                    }}>
-                        © {new Date().getFullYear()} Powered by <a className='hover:underline' href="https://github.com/openRin/Rin" target="_blank">Rin</a>
-                    </span>
-                    {config.getBoolean('rss') && <>
-                        <Spliter />
-                        <Popup trigger={
-                            <button className="hover:underline" type="button">
-                                RSS
-                            </button>
-                        }
-                            position="top center"
-                            arrow={false}
-                            closeOnDocumentClick>
-                            <div className="border-card">
-                                <p className='font-bold t-primary'>
-                                    {t('footer.rss')}
-                                </p>
-                                <p>
-                                    <a href='/rss.xml'>
+                <Padding className="mx-4">
+                    <div className="flex w-full flex-col items-center gap-3 md:flex-row md:gap-4">
+                        <p className='text-sm text-neutral-500 font-normal link-line text-center md:shrink-0 md:text-start'>
+                            <span onDoubleClick={() => {
+                                if(doubleClickTimes >= 2){ // actually need 3 times doubleClick
+                                    setDoubleClickTimes(0)
+                                    if(!loginEnabled) {
+                                        setLocation(buildLoginPath(HIDDEN_LOGIN_REDIRECT))
+                                    }
+                                } else {
+                                    setDoubleClickTimes(doubleClickTimes + 1)
+                                }
+                            }}>
+                                © {new Date().getFullYear()} Powered by <a className='hover:underline' href="https://github.com/openRin/Rin" target="_blank">Rin</a>
+                            </span>
+                            {config.getBoolean('rss') && <>
+                                <Spliter />
+                                <Popup trigger={
+                                    <button className="hover:underline" type="button">
                                         RSS
-                                    </a> <Spliter />
-                                    <a href='/atom.xml'>
-                                        Atom
-                                    </a> <Spliter />
-                                    <a href='/rss.json'>
-                                        JSON
-                                    </a>
-                                </p>
+                                    </button>
+                                }
+                                    position="top center"
+                                    arrow={false}
+                                    closeOnDocumentClick>
+                                    <div className="border-card">
+                                        <p className='font-bold t-primary'>
+                                            {t('footer.rss')}
+                                        </p>
+                                        <p>
+                                            <a href='/rss.xml'>
+                                                RSS
+                                            </a> <Spliter />
+                                            <a href='/atom.xml'>
+                                                Atom
+                                            </a> <Spliter />
+                                            <a href='/rss.json'>
+                                                JSON
+                                            </a>
+                                        </p>
 
+                                    </div>
+                                </Popup>
+                            </>}
+                        </p>
+                        <div className="hazard-tape relative w-full min-w-0 overflow-hidden rounded-full py-1.5 md:flex-1">
+                            <span className="hazard-stripe pointer-events-none absolute inset-x-0 top-0 h-1.5" aria-hidden="true" />
+                            <span className="hazard-stripe pointer-events-none absolute inset-x-0 bottom-0 h-1.5" aria-hidden="true" />
+                            <div className="rin-marquee flex w-max items-center" aria-hidden="true">
+                                {[0, 1].map((copy) => (
+                                    <div key={copy} className="flex shrink-0 items-center">
+                                        {Array.from({ length: 24 }, (_, index) => (
+                                            <span key={index} className="flex shrink-0 items-center gap-3 px-6 text-[11px] font-bold whitespace-nowrap text-black">
+                                                立入禁止テープ
+                                            </span>
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
-                        </Popup>
-                    </>}
-                </p>
-                <div className="w-fit-content inline-flex rounded-full border border-zinc-200 p-[3px] dark:border-zinc-700">
-                    <ThemeButton mode='light' current={modeState} label="Toggle light mode" icon="ri-sun-line" onClick={setMode} />
-                    <ThemeButton mode='system' current={modeState} label="Toggle system mode" icon="ri-computer-line" onClick={setMode} />
-                    <ThemeButton mode='dark' current={modeState} label="Toggle dark mode" icon="ri-moon-line" onClick={setMode} />
-                </div>
+                            <span className="sr-only">立入禁止テープ</span>
+                        </div>
+                        <div className="w-fit-content inline-flex shrink-0 rounded-full border border-zinc-200 p-[3px] dark:border-zinc-700">
+                            <ThemeButton mode='light' current={modeState} label="Toggle light mode" icon="ri-sun-line" onClick={setMode} />
+                            <ThemeButton mode='system' current={modeState} label="Toggle system mode" icon="ri-computer-line" onClick={setMode} />
+                            <ThemeButton mode='dark' current={modeState} label="Toggle dark mode" icon="ri-moon-line" onClick={setMode} />
+                        </div>
+                    </div>
+                </Padding>
             </div>
         </footer>
     );

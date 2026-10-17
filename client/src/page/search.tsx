@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { Helmet } from 'react-helmet'
 import { useTranslation } from "react-i18next"
-import { Link, useSearch } from "wouter"
+import { useSearch } from "wouter"
 import { FeedCard } from "../components/feed_card"
 import { FeedListEmpty, FeedListError, feedListClass } from "../components/feed-list"
+import { PageTuner } from "../components/page-tuner"
 import { Waiting } from "../components/loading"
 import { client } from "../app/runtime"
 
@@ -89,21 +90,13 @@ export function SearchPage({ keyword }: { keyword: string }) {
                             ) : (
                                 <FeedListEmpty />
                             )}
-                            <div className="w-full flex flex-row items-center mt-4 ani-show">
-                                {page > 1 &&
-                                    <Link href={`?page=${(page - 1)}&limit=${limit}`}
-                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                        {t('previous')}
-                                    </Link>
-                                }
-                                <div className="flex-1" />
-                                {feeds?.hasNext &&
-                                    <Link href={`?page=${(page + 1)}&limit=${limit}`}
-                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                        {t('next')}
-                                    </Link>
-                                }
-                            </div>
+                            <PageTuner
+                                page={page}
+                                size={feeds?.size ?? 0}
+                                limit={limit}
+                                hasNext={feeds?.hasNext ?? false}
+                                hrefFor={(target) => `?page=${target}&limit=${limit}`}
+                            />
                         </Waiting>
                     )}
                 </main>

@@ -3,7 +3,7 @@ import { Button } from "./button";
 import type { FeedLayout } from "./feed-layout-options";
 
 export function feedListClass(layout: FeedLayout) {
-    return layout === "masonry" ? "wtile ani-show" : "w-full flex flex-col ani-show";
+    return layout === "masonry" ? "wtile ani-show" : "w-full flex flex-col gap-4 ani-show";
 }
 
 export function FeedListEmpty() {

@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet'
 import { Link, useSearch } from "wouter"
 import { FeedCard } from "../components/feed_card"
 import { FeedListEmpty, FeedListError, feedListClass } from "../components/feed-list"
+import { PageTuner } from "../components/page-tuner"
 import { Waiting } from "../components/loading"
 import { client } from "../app/runtime"
 import { ProfileContext } from "../state/profile"
@@ -119,21 +120,13 @@ export function FeedsPage() {
                             ) : (
                                 <FeedListEmpty />
                             )}
-                            <div className="w-full flex flex-row items-center mt-4 ani-show">
-                                {page > 1 &&
-                                    <Link href={`/?type=${listState}&page=${(page - 1)}`}
-                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                        {t('previous')}
-                                    </Link>
-                                }
-                                <div className="flex-1" />
-                                {currentFeeds.hasNext &&
-                                    <Link href={`/?type=${listState}&page=${(page + 1)}`}
-                                        className={`text-sm font-normal rounded-full px-4 py-2 text-white bg-theme`}>
-                                        {t('next')}
-                                    </Link>
-                                }
-                            </div>
+                            <PageTuner
+                                page={page}
+                                size={currentFeeds.size}
+                                limit={limit}
+                                hasNext={currentFeeds.hasNext}
+                                hrefFor={(target) => `/?type=${listState}&page=${target}`}
+                            />
                         </Waiting>
                     )}
                 </main>
